@@ -15,6 +15,7 @@ img{max-width:100%}
 [hidden]{display:none!important}
 </style>
 <title>群雄逐鹿 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
@@ -93,6 +94,8 @@ button:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
 
 .ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(14px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:30}
 #modal{background:rgba(8,6,10,.55)}
+#modal.ztop{z-index:46}
+.cf-err{color:var(--bad);font-size:13px;min-height:1.2em;margin:6px 0 0}
 .dialog{width:min(100%,520px);max-height:84vh;overflow:auto;padding:16px;touch-action:pan-y;overscroll-behavior:contain}
 .dialog h3{margin:0 0 4px;font-family:var(--f-display);font-size:22px;letter-spacing:.06em}
 .dialog p{margin:6px 0;line-height:1.6;color:#ddd3c0}
@@ -106,6 +109,21 @@ button:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 .row .btn{min-width:96px}
 input[type=range]{width:100%;accent-color:var(--cinnabar);height:32px}
+.cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
+.cf-grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.cf-grid input{width:100%}
+.cf-in{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--bronze-dim);border-radius:7px;padding:7px 8px;min-height:40px;min-width:0;-webkit-user-select:text;user-select:text;box-sizing:border-box}
+select.cf-in{padding:6px 4px}
+.cf-col{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.cf-sw{width:34px;height:34px;border-radius:8px;border:2px solid rgba(255,255,255,.15);background:var(--c)}
+.cf-sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--cinnabar)}
+.cf-p{padding:8px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);margin-top:7px}
+.cf-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:6px;align-items:center}
+.cf-h input{width:100%}
+.cf-tag{font-family:var(--f-display);color:var(--bronze);font-size:13px;white-space:nowrap}
+.cf-roll{min-height:40px!important;padding:4px 10px!important;font-size:15px!important}
+.cf-st{font-size:12.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.cf-st b{color:var(--text);font-weight:500}
 .big-num{font-family:var(--f-display);font-size:30px;text-align:center;font-variant-numeric:tabular-nums}
 
 /* Courier scroll */
@@ -160,8 +178,6 @@ input[type=range]{width:100%;accent-color:var(--cinnabar);height:32px}
 @media (min-width:760px){#sheet{width:420px;align-self:flex-start}}
 </style>
 
-</head>
-<body>
 <div id="stage"></div>
 <div id="ui" hidden>
   <header id="top" class="panel pe"></header>
@@ -251,50 +267,82 @@ const FACTIONS={
   ma:{ruler:'馬騰',flag:'馬',color:'#d27a2c',dyn:'秦',diff:'普通',blurb:'西涼鐵騎，縱橫關中'},
   gong:{ruler:'公孫瓚',flag:'公',color:'#8fa7bd',dyn:'燕',diff:'困難',blurb:'白馬義從，威震北疆'},
   shu:{ruler:'袁術',flag:'仲',color:'#8d8a2b',dyn:'仲',diff:'普通',blurb:'玉璽在手，自號仲家'},
-  lu2:{ruler:'張魯',flag:'米',color:'#8a6a45',dyn:'漢寧',diff:'困難',blurb:'五斗米道，割據漢中'}
+  lu2:{ruler:'張魯',flag:'米',color:'#8a6a45',dyn:'漢寧',diff:'困難',blurb:'五斗米道，割據漢中'},
+  zhangx:{ruler:'張繡',flag:'繡',color:'#e8735a',dyn:'涼',diff:'普通',blurb:'北地槍王，賈詡為謀，屯兵宛城'},
+  kong:{ruler:'孔融',flag:'孔',color:'#d4609a',dyn:'魯',diff:'困難',blurb:'孔子之後，名士領北海'},
+  du:{ruler:'公孫度',flag:'遼',color:'#2a3f8f',dyn:'遼',diff:'普通',blurb:'雄踞遼東，自號平州牧'},
+  shi:{ruler:'士燮',flag:'士',color:'#8cc63f',dyn:'越',diff:'困難',blurb:'交趾太守，嶺南安樂之地'},
+  yang:{ruler:'張楊',flag:'楊',color:'#a58fd6',dyn:'魏',diff:'困難',blurb:'河內太守，扼守太行'},
+  yao:{ruler:'劉繇',flag:'繇',color:'#3fb7d9',dyn:'吳',diff:'困難',blurb:'揚州刺史，退守豫章'},
+  lang:{ruler:'王朗',flag:'王',color:'#c8b07a',dyn:'越',diff:'困難',blurb:'會稽太守，經學大儒'},
+  jue:{ruler:'李傕',flag:'傕',color:'#9e1b32',dyn:'秦',diff:'普通',blurb:'董卓舊部，挾持長安'},
+  yan:{ruler:'張燕',flag:'黑',color:'#5b5b78',dyn:'燕',diff:'普通',blurb:'黑山百萬眾，出沒常山'},
+  han:{ruler:'韓遂',flag:'韓',color:'#d9d4c7',dyn:'涼',diff:'普通',blurb:'九曲黃河，割據金城'},
+  meng:{ruler:'孟獲',flag:'蠻',color:'#1f6b45',dyn:'南',diff:'困難',blurb:'南中蠻王，七擒難服'}
 };
 const CITY_DATA=`薊,116.4,39.9,2,gong
-北平,118.9,40.4,1,gong
-南皮,116.7,38.0,2,yuan
-平原,116.3,37.2,1,yuan
+北平,118.9,40.4,1,-
+南皮,116.7,38.0,2,-
+平原,116.3,37.2,1,-
 鄴,114.4,36.3,3,yuan
-晉陽,112.5,37.9,2,yuan
-北海,118.7,36.6,2,liu
-濮陽,115.0,35.7,2,cao
-陳留,114.6,34.8,2,cao
+晉陽,112.5,37.9,2,-
+北海,118.7,36.6,2,kong
+濮陽,115.0,35.7,2,-
+陳留,114.6,34.8,2,-
 許昌,113.8,34.0,3,cao
-洛陽,112.4,34.65,3,cao
-宛,112.6,33.2,2,cao
-長安,108.9,34.3,3,ma
+洛陽,112.4,34.65,3,-
+宛,112.6,33.2,2,zhangx
+長安,108.9,34.3,3,jue
 天水,105.7,34.6,1,ma
-武威,102.6,37.9,1,ma
+武威,102.6,37.9,1,-
 漢中,107.0,33.1,2,lu2
 小沛,116.9,34.7,1,liu
 下邳,118.0,34.2,2,lu
-汝南,114.7,32.95,2,shu
+汝南,114.7,32.95,2,-
 壽春,116.8,32.5,2,shu
-新野,112.2,32.55,1,biao
+新野,112.2,32.55,1,-
 襄陽,112.1,31.9,3,biao
-江陵,112.2,30.35,2,biao
-江夏,114.3,30.6,2,biao
-長沙,113.0,28.2,2,biao
-武陵,111.7,29.0,1,biao
-零陵,111.6,26.4,1,biao
-桂陽,113.0,25.8,1,biao
+江陵,112.2,30.35,2,-
+江夏,114.3,30.6,2,-
+長沙,113.0,28.2,2,-
+武陵,111.7,29.0,1,-
+零陵,111.6,26.4,1,-
+桂陽,113.0,25.8,1,-
 建業,118.8,32.05,3,sun
-吳,120.6,31.3,2,sun
-會稽,120.5,29.95,1,sun
-柴桑,116.0,29.7,2,sun
+吳,120.6,31.3,2,-
+會稽,120.5,29.95,1,lang
+柴桑,116.0,29.7,2,-
 成都,104.1,30.7,3,zhang
-江州,106.5,29.6,2,zhang
-梓潼,105.2,31.6,1,zhang
-永安,109.5,31.0,1,zhang
-建寧,103.8,25.5,1,zhang`;
-const EDGE_DATA='薊-北平 薊-南皮 南皮-平原 南皮-鄴 平原-鄴 平原-北海 平原-濮陽 鄴-晉陽 鄴-濮陽 鄴-洛陽 晉陽-洛陽 晉陽-長安 北海-下邳 北海-小沛 濮陽-陳留 濮陽-小沛 陳留-許昌 陳留-洛陽 陳留-小沛 許昌-洛陽 許昌-宛 許昌-汝南 洛陽-長安 洛陽-宛 小沛-下邳 小沛-壽春 小沛-汝南 下邳-壽春 下邳-建業 汝南-壽春 汝南-江夏 汝南-新野 宛-新野 新野-襄陽 襄陽-江陵 襄陽-江夏 襄陽-漢中 江陵-江夏 江陵-武陵 江陵-永安 江夏-柴桑 江夏-長沙 壽春-建業 壽春-柴桑 建業-吳 建業-柴桑 吳-會稽 長沙-武陵 長沙-桂陽 長沙-柴桑 武陵-零陵 零陵-桂陽 長安-天水 長安-漢中 天水-武威 天水-漢中 漢中-梓潼 梓潼-成都 成都-江州 江州-永安 成都-建寧 江州-建寧 北海-吳';
-const WATER=new Set('江陵-江夏 江夏-柴桑 柴桑-建業 壽春-建業 下邳-建業 江陵-永安 江州-永安 壽春-柴桑 江夏-長沙 江陵-武陵 北海-吳'.split(' ').flatMap(e=>{const [a,b]=e.split('-');return[a+'-'+b,b+'-'+a];}));
+江州,106.5,29.6,2,-
+梓潼,105.2,31.6,1,-
+永安,109.5,31.0,1,-
+建寧,103.8,25.5,1,-
+襄平,123.2,41.3,2,du
+雁門,112.7,39.5,1,-
+常山,114.5,38.1,2,yan
+河內,113.4,35.25,2,yang
+泰山,117.1,36.2,1,-
+琅邪,118.4,35.3,1,-
+譙,115.8,33.85,2,-
+廣陵,119.4,32.8,2,-
+廬江,117.0,31.2,2,-
+豫章,115.9,28.6,2,yao
+建安,118.3,27.0,1,-
+南海,113.3,23.1,2,-
+蒼梧,111.3,23.6,1,-
+交趾,105.9,21.75,2,shi
+雲南,100.6,25.6,1,meng
+牂牁,106.6,26.6,1,-
+上庸,110.3,32.3,1,-
+武都,105.0,33.4,1,-
+安定,106.7,35.5,1,-
+金城,103.8,36.1,2,han
+弘農,110.9,34.55,1,-`;
+const EDGE_DATA='薊-北平 薊-南皮 南皮-平原 南皮-鄴 平原-鄴 平原-北海 平原-濮陽 鄴-晉陽 鄴-濮陽 晉陽-洛陽 晉陽-長安 北海-下邳 北海-小沛 濮陽-陳留 濮陽-小沛 陳留-許昌 陳留-洛陽 陳留-小沛 許昌-洛陽 許昌-宛 許昌-汝南 洛陽-宛 小沛-下邳 小沛-壽春 小沛-汝南 下邳-壽春 下邳-建業 汝南-壽春 汝南-江夏 汝南-新野 宛-新野 新野-襄陽 襄陽-江陵 襄陽-江夏 江陵-江夏 江陵-武陵 江陵-永安 江夏-柴桑 江夏-長沙 壽春-建業 壽春-柴桑 建業-吳 建業-柴桑 吳-會稽 長沙-武陵 長沙-桂陽 長沙-柴桑 武陵-零陵 零陵-桂陽 長安-天水 長安-漢中 天水-武威 天水-漢中 漢中-梓潼 梓潼-成都 成都-江州 江州-永安 成都-建寧 江州-建寧 北海-吳 襄平-北平 襄平-北海 河內-洛陽 河內-鄴 河內-晉陽 河內-陳留 常山-鄴 常山-南皮 常山-晉陽 常山-雁門 雁門-晉陽 雁門-薊 泰山-平原 泰山-北海 泰山-濮陽 泰山-小沛 泰山-琅邪 琅邪-北海 琅邪-下邳 廣陵-下邳 廣陵-建業 廣陵-壽春 譙-小沛 譙-陳留 譙-汝南 譙-壽春 廬江-壽春 廬江-柴桑 廬江-江夏 豫章-柴桑 豫章-長沙 豫章-建安 豫章-桂陽 建安-會稽 建安-南海 南海-桂陽 南海-蒼梧 蒼梧-零陵 蒼梧-桂陽 蒼梧-交趾 蒼梧-牂牁 交趾-建寧 雲南-建寧 雲南-交趾 牂牁-建寧 牂牁-江州 牂牁-武陵 牂牁-零陵 上庸-襄陽 上庸-漢中 上庸-永安 上庸-宛 武都-天水 武都-漢中 武都-梓潼 安定-長安 安定-天水 安定-金城 金城-武威 金城-天水 弘農-洛陽 弘農-長安 弘農-宛';
+const WATER=new Set('江陵-江夏 江夏-柴桑 柴桑-建業 壽春-建業 下邳-建業 江陵-永安 江州-永安 壽春-柴桑 江夏-長沙 江陵-武陵 北海-吳 廣陵-建業 廬江-柴桑 襄平-北海'.split(' ').flatMap(e=>{const [a,b]=e.split('-');return[a+'-'+b,b+'-'+a];}));
 const isWater=(a,b)=>WATER.has(a+'-'+b);
 // 城池經濟：[商業倍率, 農業倍率, 特產]
-const CITY_ECON={薊:[1.0,.9,'馬'],北平:[.8,.8,'馬'],南皮:[1.1,1.0,'鹽'],平原:[.9,1.2,''],鄴:[1.2,1.2,'鐵'],晉陽:[.9,.9,'鐵'],北海:[1.1,1.0,'鹽'],濮陽:[.9,1.1,''],陳留:[1.0,1.2,''],許昌:[1.1,1.3,'屯田'],洛陽:[1.4,1.0,'市集'],宛:[1.0,1.1,'鐵'],長安:[1.3,1.0,'市集'],天水:[.8,.8,'馬'],武威:[.7,.7,'馬'],漢中:[.9,1.2,''],小沛:[.9,1.0,''],下邳:[1.1,1.0,''],汝南:[.9,1.2,''],壽春:[1.1,1.1,'鹽'],新野:[.8,1.0,''],襄陽:[1.2,1.2,'港'],江陵:[1.0,1.3,'港'],江夏:[1.0,1.0,'港'],長沙:[.9,1.2,''],武陵:[.8,1.0,''],零陵:[.8,.9,''],桂陽:[.8,.9,'鐵'],建業:[1.3,1.1,'港'],吳:[1.2,1.3,'港'],會稽:[1.0,1.1,'鹽'],柴桑:[1.0,1.0,'港'],成都:[1.2,1.4,'蜀錦'],江州:[1.0,1.1,'港'],梓潼:[.8,.9,''],永安:[.8,.8,''],建寧:[.8,.9,'']};
+const CITY_ECON={薊:[1.0,.9,'馬'],北平:[.8,.8,'馬'],南皮:[1.1,1.0,'鹽'],平原:[.9,1.2,''],鄴:[1.2,1.2,'鐵'],晉陽:[.9,.9,'鐵'],北海:[1.1,1.0,'鹽'],濮陽:[.9,1.1,''],陳留:[1.0,1.2,''],許昌:[1.1,1.3,'屯田'],洛陽:[1.4,1.0,'市集'],宛:[1.0,1.1,'鐵'],長安:[1.3,1.0,'市集'],天水:[.8,.8,'馬'],武威:[.7,.7,'馬'],漢中:[.9,1.2,''],小沛:[.9,1.0,''],下邳:[1.1,1.0,''],汝南:[.9,1.2,''],壽春:[1.1,1.1,'鹽'],新野:[.8,1.0,''],襄陽:[1.2,1.2,'港'],江陵:[1.0,1.3,'港'],江夏:[1.0,1.0,'港'],長沙:[.9,1.2,''],武陵:[.8,1.0,''],零陵:[.8,.9,''],桂陽:[.8,.9,'鐵'],建業:[1.3,1.1,'港'],吳:[1.2,1.3,'港'],會稽:[1.0,1.1,'鹽'],柴桑:[1.0,1.0,'港'],成都:[1.2,1.4,'蜀錦'],江州:[1.0,1.1,'港'],梓潼:[.8,.9,''],永安:[.8,.8,''],建寧:[.8,.9,''],襄平:[.9,.9,'馬'],雁門:[.7,.8,'馬'],常山:[.9,1.0,'鐵'],河內:[1.0,1.2,''],泰山:[.8,.9,''],琅邪:[.9,.9,'鹽'],譙:[1.0,1.1,''],廣陵:[1.1,1.1,'鹽'],廬江:[.9,1.1,'港'],豫章:[.9,1.1,''],建安:[.7,.8,''],南海:[1.2,.9,'港'],蒼梧:[.7,.8,''],交趾:[1.1,1.0,'市集'],雲南:[.7,.8,'馬'],牂牁:[.7,.7,''],上庸:[.7,.8,''],武都:[.7,.8,''],安定:[.7,.8,'馬'],金城:[.8,.8,'馬'],弘農:[.9,1.0,'']};
 const SPEC_DESC={'鹽':'鹽田：每月金 +80','市集':'大市集：每月金 +120','蜀錦':'蜀錦：每月金 +100','鐵':'鐵礦：兵器造價 500','馬':'產馬：出征部隊戰力 +5%','屯田':'屯田：每月糧 +300','港':'港口：水戰戰力 +10%'};
 const SPEC_GOLD={'鹽':80,'市集':120,'蜀錦':100};
 // 姓名,勢力(-為在野),所在,統率,武力,智力,政治,魅力
@@ -367,7 +415,7 @@ const OFFICER_DATA=`曹操,cao,許昌,96,72,91,94,96
 馬騰,ma,武威,84,86,48,52,82
 馬超,ma,天水,88,98,40,26,82
 龐德,ma,天水,82,94,60,40,68
-韓遂,ma,長安,82,79,72,64,68
+韓遂,han,金城,82,79,72,64,68
 馬岱,ma,長安,76,82,52,40,62
 公孫瓚,gong,薊,84,84,62,54,76
 趙雲,gong,北平,91,97,76,66,82
@@ -388,8 +436,55 @@ const OFFICER_DATA=`曹操,cao,許昌,96,72,91,94,96
 陸遜,-,吳,95,69,95,87,85
 馬良,-,襄陽,30,26,86,84,82
 呂蒙,-,柴桑,90,83,89,74,80
-賈詡,-,宛,86,48,97,84,60
-徐盛,-,建業,80,82,70,52,60`;
+賈詡,zhangx,宛,86,48,97,84,60
+徐盛,-,建業,80,82,70,52,60
+張繡,zhangx,宛,78,84,52,42,64
+胡車兒,zhangx,宛,60,82,30,22,40
+張先,zhangx,宛,58,68,32,30,40
+孔融,kong,北海,40,30,82,74,88
+武安國,kong,北海,62,78,30,26,50
+王脩,kong,北海,36,40,72,80,72
+宗寶,kong,北海,56,64,34,30,40
+公孫度,du,襄平,78,72,70,72,70
+公孫康,du,襄平,72,76,60,58,60
+柳毅,du,襄平,64,66,52,50,48
+陽儀,du,襄平,60,62,56,50,46
+士燮,shi,交趾,50,40,82,88,84
+士壹,shi,交趾,52,52,60,62,58
+士徽,shi,交趾,58,62,48,44,46
+士武,shi,交趾,56,60,40,46,48
+張楊,yang,河內,66,68,46,52,72
+眭固,yang,河內,62,72,30,26,40
+楊醜,yang,河內,56,66,34,30,36
+董昭,yang,河內,48,30,86,80,64
+劉繇,yao,豫章,60,48,66,70,74
+笮融,yao,豫章,46,58,52,30,30
+薛禮,yao,豫章,54,62,40,38,40
+許劭,yao,豫章,30,20,84,70,80
+王朗,lang,會稽,44,36,80,82,70
+虞翻,lang,會稽,46,48,86,72,52
+周昕,lang,會稽,62,66,50,48,52
+李傕,jue,長安,78,82,40,20,30
+郭汜,jue,長安,72,80,34,18,28
+樊稠,jue,長安,70,78,30,22,36
+張濟,jue,長安,72,74,46,40,50
+張燕,yan,常山,76,80,50,42,70
+孫輕,yan,常山,56,66,30,26,40
+王當,yan,常山,58,64,32,30,44
+成宜,han,金城,62,72,30,26,40
+閻行,han,金城,74,88,46,34,52
+程銀,han,金城,60,68,32,30,40
+孟獲,meng,雲南,76,88,40,40,78
+孟優,meng,雲南,58,74,28,20,40
+兀突骨,meng,雲南,70,90,12,8,30
+帶來洞主,meng,雲南,56,70,40,30,46
+陳登,-,廣陵,80,60,86,82,70
+華歆,-,廬江,40,30,82,84,70
+劉曄,-,譙,62,30,92,72,60
+鍾繇,-,弘農,40,30,82,90,70
+王平,-,武都,80,76,62,50,56
+臧洪,-,泰山,72,68,70,66,74
+滿寵,-,琅邪,78,64,80,74,60`;
 const LADIES_DATA=[
   {name:'貂蟬',desc:'傾國之貌。夫君魅力 +8',eff:{cha:8},robe:'#d65a7a'},
   {name:'大喬',desc:'江東國色。夫君魅力 +5',eff:{cha:5},robe:'#e07a6a'},
@@ -420,7 +515,10 @@ const LOOKS={
   '孫尚香':{robe:'#b8322a',female:true,weapon:'bow',hat:'bun'},
   '祝融':{robe:'#a0522d',female:true,weapon:'spear',hat:'bun',skin:'#b07a50'},
   '王異':{robe:'#6a5a9a',female:true,weapon:'sword',hat:'bun'},
-  '鮑三娘':{robe:'#c46a3a',female:true,weapon:'spear',hat:'bun'}
+  '鮑三娘':{robe:'#c46a3a',female:true,weapon:'spear',hat:'bun'},
+  '孟獲':{robe:'#7a4a2a',skin:'#9a6a42',hat:'plume',weapon:'glaive',armor:true,armorColor:'#6a5a3a'},
+  '孔融':{robe:'#efe6d2',hat:'scholar',beard:'#e0ddd5'},
+  '士燮':{robe:'#5d7a3a',hat:'crown',beard:'#d8d4cc'}
 };
 
 // ================= 地理 =================
@@ -1195,6 +1293,39 @@ function diploScene(o){const H=FACTIONS[o.hostF],Gf=FACTIONS[o.guestF],T=DIPLO_T
         setTimeout(()=>{walkTo(B['guard-1'],-.9,-5.2,2.4);walkTo(B['guard1'],.9,-5.2,2.4);},11200);
         setTimeout(()=>{env.P.bow=0;walkTo(env,0,12,2.2);B.serv.forEach((s,i)=>{tw(s.P,'kneel',0,.3);walkTo(s,(i?1:-1)*.9,13,2.4);});},12800);}}
   });}
+// ================= 諸侯會盟（反玩家聯軍）3D 畫面 =================
+function coalFloor(x,z){const dz=z+5;if(Math.abs(x)<1.6&&Math.abs(dz)<1.3)return 1.5;if(Math.abs(x)<2.6&&Math.abs(dz)<2)return 1.0;if(Math.abs(x)<3.6&&Math.abs(dz)<2.7)return .5;return 0;}
+function coalitionScene(co){const pl=G.player,mem=co.members.slice(0,6),L=co.leader,LN=FACTIONS[L].ruler,PN=FACTIONS[pl].ruler;const names=mem.map(f=>FACTIONS[f].ruler).join('、');
+  const lines=[`${LN}：${PN}野心勃勃，吞併州郡，天下諸侯人人自危！`,`${LN}：今日我等歃血為盟，共討${PN}，有渝此盟，天地共誅！`,`眾諸侯：願奉${LN}為盟主，同心戮力，共伐${PN}！`];
+  return runScene({title:'諸侯會盟',dur:20,
+    build(){const B=baseScene({sky:0xe2cfa8,skyTop:0x6f86a8,fog:0xd8c6a0,near:34,far:150,hs:0xfff2dc,hi:.65,sunColor:0xffe6c0,sunPos:[-24,36,22],sh:26});const sc=B.scene;CUR_FLOOR=coalFloor;
+      sc.add(groundPlane(170,80,(x,z)=>Math.max(0,Math.hypot(x,z+4)-16)*.06*fbm(x*.1,z*.1)*3,(x,z)=>grassColor(x,z,[.52,.5,.3])));
+      const st=mat('#8a8070'),st2=mat('#9a9080'),red=mat('#a8322a');
+      sc.add(M(box(7.2,.5,5.4),st,0,.25,-5));sc.add(M(box(5.2,.5,4),st2,0,.75,-5));sc.add(M(box(3.2,.5,2.6),st,0,1.25,-5));sc.add(M(box(1.4,.06,5.6),red,0,.52,-2.5,false));
+      sc.add(M(box(1.5,.55,.7),mat('#6a2a1c'),0,1.78,-5.7));sc.add(M(box(1.6,.05,.8),red,0,2.07,-5.7));sc.add(M(cyl(.2,.16,.28,10,.14),mat('#7a6a3a',{metalness:.6,roughness:.4}),0,2.1,-5.7));
+      const plq=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.6),new THREE.MeshStandardMaterial({map:textCanvas(128,208,(x,w,h)=>{x.fillStyle='#b8322a';x.fillRect(0,0,w,h);x.strokeStyle='#f2d27a';x.lineWidth=6;x.strokeRect(6,6,w-12,h-12);x.fillStyle='#f2d27a';x.font=`700 96px ${FONT_D}`;x.textAlign='center';x.textBaseline='middle';x.fillText('盟',w/2,h/2+6);}),side:THREE.DoubleSide}));plq.position.set(0,3.6,-6.4);sc.add(plq);
+      for(const sx of [-1,1])sc.add(M(cyl(.06,.06,4.2,6,2.1),mat('#4a3a28'),sx*.85,1.5,-6.42));
+      const acts=[],n=mem.length;B.lords=[];
+      mem.forEach((f,i)=>{const x=(i-(n-1)/2)*2.3,z=3.2+Math.abs(i-(n-1)/2)*.5;const b=bigBanner(FACTIONS[f].flag,FACTIONS[f].color);b.position.set(x-.7,0,z+2.6);sc.add(b);
+        const R0=rulerFigure(f);const h=actor(R0.h,x,z,Math.PI);sc.add(h.root);acts.push(h);B.lords.push(h);if(f===L)B.leader=h;
+        for(let k=0;k<3;k++){const g=actor(makeHuman({robe:FACTIONS[f].color,armor:true,hat:'helmet',weapon:'spear'}),x+(k-1)*.7,z+4.2+R()*.3,Math.PI);sc.add(g.root);acts.push(g);}});
+      const cup=M(cyl(.07,.05,.13,8),mat('#d0a840',{metalness:.7,roughness:.3}),0,-.66,.06);B.leader.rArm.add(cup);
+      const smoke=new Particles(sc,160,'soft'),dust=new Particles(sc,200,'soft');B.acts=acts;
+      return Object.assign(B,{scene:sc,camera:B.camera,update(dt,t,lt){actorsUpdate(acts,dt,t);
+        if(R()<.6)smoke.spawn((R()-.5)*.1,2.3,-5.7,(R()-.5)*.1,.5,(R()-.5)*.1,3,.15,1.2,0xdddddd,.35,-.05,.2);smoke.update(dt);
+        if(R()<.4)dust.spawn((R()-.5)*30,.2,(R()-.5)*16+4,(R()-.5)*.6,.2,(R()-.5)*.6,4,.4,2,0xd8c8a0,.25,0,.1);dust.update(dt);
+        const c=B.camera,lp=B.leader.root.position;
+        if(lt<5){const a=-.9+lt*.08;c.position.set(Math.sin(a)*15,7.5-lt*.4,Math.cos(a)*15-1);c.lookAt(0,1.2,-1);}
+        else if(lt<13){c.position.set(lp.x+1.2,lp.y+2.6,lp.z+5.2);c.lookAt(lp.x,lp.y+1.4,lp.z);}
+        else{const a=lt*.06;c.position.set(Math.sin(a)*3,4.2,-8.4);c.lookAt(0,1.2,3.5);}}});},
+    steps:[[.3,()=>{hudSub(`${names}齊聚會盟台，共推${LN}為盟主`);AU.drum(0,.4);AU.drum(.5,.4);AU.drum(1,.4);}],
+      [5.6,()=>{hudSub(lines[0]);AU.gong();}],[9.2,()=>hudSub(lines[1])],[13,()=>{hudSub(lines[2]);AU.cheer();}],
+      [16.4,()=>{hudSub('');hudBanner(`反${PN}聯軍成立！`,3200);AU.horn();}]],
+    onReady(ctrl,B){const ld=B.leader;walkTo(ld,0,-4.5,1.5,0);
+      setTimeout(()=>{ld.face=0;ld.rx=-1.2;},4800);setTimeout(()=>{ld.rx=-1.9;},9000);
+      setTimeout(()=>B.lords.forEach(h=>{if(h!==ld)tw(h.P,'bow',.8,.5);}),9400);setTimeout(()=>B.lords.forEach(h=>{if(h!==ld)tw(h.P,'bow',0,.5);}),10600);
+      setTimeout(()=>{ld.rx=null;ld.arms=-2.6;B.acts.forEach(h=>{if(h!==ld)h.mode='cheer';});},13200);}
+  });}
 // ================= 3D 攻城戰 =================
 function battleScene(info){
   const fa=FACTIONS[info.att.f],fd=info.def.f?FACTIONS[info.def.f]:{color:'#777777',flag:'民',ruler:'守軍'};
@@ -1671,15 +1802,19 @@ function buildDuel(opt,A,B_,fA,fB,meIdx){
   return S;}
 // ================= 遊戲狀態 =================
 let G=null,SEL=null,BUSY=false;
-const SAVE_KEY='qunxiong3d_save_v3';
+const SAVE_KEY='qunxiong3d_save_v4';
 const OF=id=>G.o[id];
 const capOf=n=>{const s=CITY_BY[n].size;return{commerce:300+s*300,farm:300+s*300,def:400+s*250};};
-const CAPITALS={cao:'許昌',yuan:'鄴',liu:'小沛',lu:'下邳',sun:'建業',biao:'襄陽',zhang:'成都',ma:'天水',gong:'薊',shu:'壽春',lu2:'漢中'};
+const CAPITALS={cao:'許昌',yuan:'鄴',liu:'小沛',lu:'下邳',sun:'建業',biao:'襄陽',zhang:'成都',ma:'天水',gong:'薊',shu:'壽春',lu2:'漢中',zhangx:'宛',kong:'北海',du:'襄平',shi:'交趾',yang:'河內',yao:'豫章',lang:'會稽',jue:'長安',yan:'常山',han:'金城',meng:'雲南'};
 const CAP_SET=new Set(Object.values(CAPITALS));
 const START_OFFS=5;
-function newState(player){
-  const st={year:198,month:1,turn:0,player,c:{},f:{},o:[],armies:[],nextA:1,nextS:1,visits:0,emperor:null,ladies:LADIES_DATA.map(l=>({name:l.name,taken:false})),set:{watch:true,anim:true},log:[],over:false,rel:{},treaty:{}};
+const START_RES={troops:5000,food:50000,gold:5000};
+// 自創勢力：登錄到 FACTIONS / CAPITALS（key 固定為 cus）
+function registerCustom(cu){if(!cu){delete FACTIONS.cus;delete CAPITALS.cus;return;}FACTIONS.cus={ruler:cu.ruler,flag:cu.flag,color:cu.color,dyn:cu.dyn||'新',diff:'自訂',blurb:'自立門戶，逐鹿天下',custom:true};CAPITALS.cus=cu.city;}
+function newState(player,custom){registerCustom(custom||null);
+  const st={custom:custom||null,coal:null,coalCD:0,year:198,month:1,turn:0,player,c:{},f:{},o:[],armies:[],nextA:1,nextS:1,visits:0,emperor:null,ladies:LADIES_DATA.map(l=>({name:l.name,taken:false})),set:{watch:true,anim:true},log:[],over:false,rel:{},treaty:{}};
   OFFICER_DATA.split('\n').forEach((l,i)=>{const a=l.split(',');const f=a[1]==='-'?null:a[1];st.o.push({id:i,name:a[0],f,c:a[2],lead:+a[3],war:+a[4],int:+a[5],pol:+a[6],cha:+a[7],loy:f?(FACTIONS[f].ruler===a[0]?100:78+Math.floor(R()*18)):0,hidden:!f,done:false,army:null,sworn:null,spouse:null,female:false});});
+  if(custom)custom.offs.forEach((c,i)=>st.o.push({id:st.o.length,name:c.name,f:'cus',c:custom.city,lead:c.lead,war:c.war,int:c.int,pol:c.pol,cha:c.cha,loy:i===0?100:92,hidden:false,done:false,army:null,sworn:null,spouse:null,female:!!c.female,custom:true}));
   const score=o=>o.lead+o.war+o.int+o.pol;
   for(const f in FACTIONS){const cap=CAPITALS[f],ruler=FACTIONS[f].ruler;const mine=st.o.filter(o=>o.f===f);
     const keep=[mine.find(o=>o.name===ruler),...mine.filter(o=>o.name!==ruler).sort((a,b)=>score(b)-score(a))].filter(Boolean).slice(0,START_OFFS);
@@ -1691,16 +1826,16 @@ function newState(player){
   const capOwner={};for(const k in CAPITALS)capOwner[CAPITALS[k]]=k;
   for(const cd of CITIES){const s=cd.size,own=capOwner[cd.name];
     const e=CITY_ECON[cd.name]||[1,1,''];const base={name:cd.name,pop:s*45000+40000+Math.round(hash(cd.lon,cd.lat)*20000),commerce:Math.round((140+s*90)*e[0]),farm:Math.round((140+s*90)*e[1]),def:220+s*140,siege:0,cool:0};
-    if(own)st.c[cd.name]=Object.assign(base,{f:own,troops:5000});
+    if(own)st.c[cd.name]=Object.assign(base,{f:own,troops:START_RES.troops});
     else{const tr=1500+s*1300+Math.round(R()*6)*100;st.c[cd.name]=Object.assign(base,{f:null,troops:tr,base:tr});}}
-  for(const k in FACTIONS){st.f[k]={gold:6000,food:10000,alive:true};st.rel[k]=50;}
+  for(const k in FACTIONS){st.f[k]={gold:START_RES.gold,food:START_RES.food,alive:true};st.rel[k]=50;}
   return st;
 }
 function cityIncome(c){const e=CITY_ECON[c.name]||[1,1,''];return{g:Math.round((c.commerce*.55+c.pop/1500)*e[0]+(SPEC_GOLD[e[2]]||0)),fd:Math.round((c.farm*1.4+c.pop/1000)*e[1]+(e[2]==='屯田'?300:0))};}
 function incomeOf(f){let g=0,fd=0,up=0;for(const c of citiesOf(f)){const i=cityIncome(c);g+=i.g;fd+=i.fd;up+=c.troops/25;}up+=G.armies.filter(a=>a.f===f).reduce((s,a)=>s+a.troops/25,0);return{g,fd:Math.round(fd-up),gross:fd,up:Math.round(up)};}
 const specOf=n=>(CITY_ECON[n]||[1,1,''])[2];
 const siegeCost=n=>specOf(n)==='鐵'?500:800;
-const NAVAL={sun:1.15,biao:1.1,zhang:1.0,lu2:.95};
+const NAVAL={sun:1.15,biao:1.1,zhang:1.0,lu2:.95,lang:1.05,yao:1.0,shi:1.05,kong:.95};
 const navalSkill=f=>f?(NAVAL[f]||.9):.9;
 const citiesOf=f=>Object.values(G.c).filter(c=>c.f===f);
 const offsIn=(n,f)=>G.o.filter(o=>o.c===n&&o.f===(f===undefined?G.c[n].f:f)&&o.f&&!o.army);
@@ -1762,7 +1897,7 @@ async function runCmd(cmd,n){if(BUSY)return;AU.init();BUSY=true;try{
 
 // ================= 對話框 =================
 function modal(html){const m=$('#modal');m.innerHTML=`<div class="dialog panel" role="dialog">${html}</div>`;m.hidden=false;return m;}
-function closeModal(){const m=$('#modal');m.hidden=true;m.innerHTML='';}
+function closeModal(){const m=$('#modal');m.hidden=true;m.innerHTML='';m.classList.remove('ztop');}
 function dlg(title,body,buttons){return new Promise(res=>{const m=modal(`<h3>${esc(title)}</h3>${body}<div class="row">${buttons.map((b,i)=>`<button class="btn ${b.cls||''}" data-i="${i}">${esc(b.label)}</button>`).join('')}</div>`);
   m.querySelectorAll('.row .btn').forEach(b=>b.onclick=()=>{closeModal();res(buttons[+b.dataset.i].value);});});}
 const offMeta=o=>`統 ${o.lead}・武 ${o.war}・智 ${o.int}・政 ${o.pol}・魅 ${o.cha}${o.loy&&o.f!==null?'・忠 '+o.loy:''}${o.sworn?'・已結義':''}${o.spouse?'・已婚':''}`;
@@ -1812,7 +1947,18 @@ async function doMarch(from){const c=G.c[from],idle=idleOffs(from);if(c.cool>G.t
   const n=await chooseNum('出征兵力',`${from}兵力 ${fmt(c.troops)}，每千兵耗糧 150`,1000,maxT,500,Math.max(1000,Math.min(maxT,Math.round(c.troops*.7/500)*500)));MAP.tring.visible=false;if(!n)return;
   let sg=0;if((c.siege||0)>0){if(isWater(from,t))toast('水路進軍，攻城兵器無法隨行');else{sg=await chooseNum('攜帶攻城兵器','投石車、衝車、雲梯、井闌：數量越多，越能削弱城防',0,c.siege,1,c.siege);if(sg===null)sg=0;}}
   F.food-=Math.round(n*.15);const a=dispatch(G.player,from,t,sel.map(OF),n,sg);syncArmies();
-  toast(`${OF(a.offs[0]).name}率兵 ${fmt(n)} 自${from}出征${t}，${a.turns>1?a.turns+'個月':'下月'}抵達`);closeSheet();}
+  toast(`${OF(a.offs[0]).name}率兵 ${fmt(n)} 自${from}出征${t}，${a.turns>1?a.turns+'個月':'下月'}抵達`);closeSheet();await offerJoint(a);}
+// ================= 同盟合擊 =================
+function allyHelpers(t){const tf=G.c[t].f;return Object.keys(FACTIONS).filter(k=>k!==G.player&&G.f[k].alive&&treaty(k)&&treaty(k).type==='ally'&&k!==tf&&!friendly(k,tf)&&citiesOf(k).some(c=>ADJ[c.name].includes(t)&&c.troops>=3000&&offsIn(c.name).length));}
+function jointChance(k){return clamp(.4+(G.rel[k]-50)/70,.15,.92);}
+function allyDispatch(k,t,turns,support){const src=citiesOf(k).filter(c=>ADJ[c.name].includes(t)&&offsIn(c.name).length&&c.troops>=3000).sort((x,y)=>y.troops-x.troops)[0];if(!src)return null;
+  const n=Math.round(src.troops*.5/100)*100;const offs=offsIn(src.name).slice().sort((x,y)=>(y.lead+y.war)-(x.lead+x.war));const take=offs.length>1?offs.slice(0,Math.min(2,offs.length-1)):offs;
+  const b=dispatch(k,src.name,t,take,n,isWater(src.name,t)?0:Math.min(2,src.siege||0));if(turns)b.turns=Math.max(1,turns);if(support)b.support=support;return b;}
+async function offerJoint(a){const t=a.to;for(const k of allyHelpers(t)){const p=jointChance(k),F=G.f[G.player];
+    const ok=await dlg('聯軍合擊',`<p>盟友 ${esc(FACTIONS[k].ruler)} 在${t}附近屯有重兵。是否遣使請其同時出兵，與我軍合擊${t}？</p><p class="sub">金 300・成功率約 ${Math.round(p*100)}%・兩軍同時抵達、合兵攻城，打下的城池歸我軍</p>`,[{label:'不必',value:false},{label:'邀請合擊',value:true,cls:'primary'}]);
+    if(!ok)continue;if(F.gold<300){toast('金錢不足');break;}F.gold-=300;
+    if(R()<p){const b=allyDispatch(k,t,a.turns,G.player);if(b){G.rel[k]=Math.max(0,G.rel[k]-3);syncArmies();toast(`${FACTIONS[k].ruler}應允！${OF(b.offs[0]).name}率兵 ${fmt(b.troops)} 自${b.from}出發，與我軍合擊${t}`,4500);}else toast(`${FACTIONS[k].ruler}兵力不足，無法出兵`);}
+    else toast(`${FACTIONS[k].ruler}推說兵馬未整，婉拒出兵`);}}
 async function doMove(from){const c=G.c[from];const tg=ADJ[from].filter(m=>G.c[m].f===G.player);if(!tg.length)return toast('鄰近沒有我方城池');
   const t=await choose('輸送目的地',`自${from}調動`,tg.map(m=>({id:m,label:m,meta:`兵 ${fmt(G.c[m].troops)}・武將 ${offsIn(m).length}`})));if(!t)return;
   const offs=offsIn(from);let sel=[];if(offs.length){sel=await choose('調動武將','可不選',offs.map(offItem),{min:0,max:offs.length});if(sel===null)return;}
@@ -1876,6 +2022,9 @@ function genAdvice(){const pl=G.player,F=G.f[pl],cs=citiesOf(pl);const offs=G.o.
    const weak=Object.keys(FACTIONS).filter(f=>f!==pl&&G.f[f].alive&&power(pl)>power(f)*4.2&&citiesOf(f).length<=2)[0];
    {const bc=cs.filter(c=>ADJ[c.name].some(n=>G.c[n].f!==pl)&&(c.train||0)<40&&idleOffs(c.name).length)[0];if(bc&&F.gold>=200)A.push({who:gens[0],text:`${bc.name}士卒操練不足（訓練 ${bc.train||0}），末將願親自督練！`,act:()=>doTrain(bc.name)});}
    if(weak)A.push({who:strat[1]||strat[0],text:`${FACTIONS[weak].ruler}勢孤力薄，主公可遣使勸其歸順，不戰而屈人之兵。`,act:()=>doDiplomacy(weak,'surrender'),later:true});}
+  if(G.coal){const tg=G.coal.members.slice().sort((a,b)=>G.rel[b]-G.rel[a]).find(f=>f!==G.coal.leader);if(tg&&F.gold>=1500)A.unshift({who:strat[0],text:`${coalName()}聲勢浩大，然各懷異心。${FACTIONS[tg].ruler}與盟主貌合神離，可遣使離間，瓦解聯軍！`,act:()=>doDiplomacy(tg,'split'),later:true});}
+  {const al=Object.keys(FACTIONS).find(k=>k!==pl&&G.f[k].alive&&treaty(k)&&treaty(k).type==='ally'&&citiesOf(k).some(c=>c.troops>=3000&&offsIn(c.name).length&&ADJ[c.name].some(n=>{const o=G.c[n].f;return o!==k&&o!==pl&&!(o&&treaty(o));})));
+   if(al&&F.gold>=500)A.push({who:strat[1]||strat[0],text:`盟友${FACTIONS[al].ruler}兵強馬壯，可請其出兵攻打共同的敵人，削弱強敵。`,act:()=>doDiplomacy(al,'joint'),later:true});}
   if(!G.emperor&&cs.length>=12)A.push({who:strat[0],text:'主公德被四海，天命所歸，宜即皇帝位，以安天下人心！',act:()=>doEmperor(),later:true});
   const single=others.find(o=>!o.spouse&&!o.female&&o.war>80);if(single&&F.gold>=1500&&G.ladies.some(l=>!l.taken))A.push({who:pols[2]||pols[0],text:`${single.name}將軍尚未婚配，主公何不為其作媒，以結其心？`,act:()=>doWedding(single),later:true});
   const sw=others.filter(o=>!o.sworn&&o.war>85);if(sw.length>=2&&F.gold>=800&&!A.some(a=>a.text.includes('結')))A.push({who:sw[0],text:`末將與${sw[1].name}意氣相投，願與主公結為兄弟，生死與共！`,act:()=>doOath([OF(ruler?ruler.id:sw[0].id),sw[0],sw[1]].filter((x,i,a)=>x&&a.indexOf(x)===i)),later:true});
@@ -1890,11 +2039,12 @@ function power(f){return citiesOf(f).reduce((s,c)=>s+c.troops,0)+G.armies.filter
 function borderFactions(f){const set=new Set();citiesOf(f).forEach(c=>ADJ[c.name].forEach(n=>{const o=G.c[n].f;if(o&&o!==f)set.add(o);}));return[...set];}
 function relWord(r){return r>=80?'親密':r>=60?'友好':r>=40?'普通':r>=20?'冷淡':'敵視';}
 function relLabel(f){const t=treaty(f);return`關係 ${relWord(G.rel[f])}（${G.rel[f]}）${t?`・${t.type==='ally'?'同盟':'停戰'}剩 ${t.until-G.turn} 月`:''}`;}
-const DIPLO_KINDS={gift:{label:'贈禮修好',cost:1000,desc:'關係大幅提升'},ally:{label:'締結同盟',cost:500,desc:'12 個月互不侵犯'},truce:{label:'請求停戰',cost:300,desc:'6 個月互不侵犯'},surrender:{label:'勸降',cost:0,desc:'對方舉國歸順'}};
-function diploChance(f,kind,e){if(kind==='gift')return 1;const rel=G.rel[f],ratio=power(G.player)/Math.max(1,power(f));let p;
+const DIPLO_KINDS={gift:{label:'贈禮修好',cost:1000,desc:'關係大幅提升'},ally:{label:'締結同盟',cost:500,desc:'12 個月互不侵犯'},truce:{label:'請求停戰',cost:300,desc:'6 個月互不侵犯'},surrender:{label:'勸降',cost:0,desc:'對方舉國歸順'},joint:{label:'請盟友出兵',cost:500,desc:'盟友出兵攻打指定城池',ally:true},split:{label:'離間聯軍',cost:1500,desc:'使其退出反我聯軍',coal:true}};
+function diploChance(f,kind,e){if(kind==='gift')return 1;if(kind==='joint')return clamp(jointChance(f)+e.pol/1000,.1,.95);if(kind==='split')return clamp(.2+G.rel[f]/220+e.int/400-(G.coal&&G.coal.leader===f?.15:0),.08,.75);const rel=G.rel[f],ratio=power(G.player)/Math.max(1,power(f));let p;
   if(kind==='ally'){p=(rel-35)/50+e.int/500+e.pol/800+(ratio>1.3?.1:0)-(ratio<.4?.25:0);const top=Math.max(0,...Object.keys(FACTIONS).filter(k=>k!==f&&k!==G.player&&G.f[k].alive).map(power));if(top>power(f)*1.3&&top>power(G.player)*1.3)p+=.12;}
   else if(kind==='truce')p=(rel-20)/60+e.int/500+(ratio>1?.15:-.05);
   else{p=ratio<4?.01:((rel-30)/120+e.int/800+(ratio-4)*.04)*Math.max(.25,1-G.turn/48);if(citiesOf(f).length>=3)p*=.4;p=Math.min(p,.55);}
+  if(inCoal(f))p=kind==='surrender'?p*.5:p-.25;
   if(kind!=='surrender')p-=.06;
   return clamp(p,.03,.95);}
 function envoysAvail(){return G.o.filter(o=>o.f===G.player&&!o.army&&!o.done).sort((a,b)=>(b.int+b.pol)-(a.int+a.pol));}
@@ -1903,16 +2053,24 @@ async function doDiplomacy(preF,preKind){const pl=G.player,F=G.f[pl];const other
   const f=preF||await choose('外交','選擇遣使對象',others.map(k=>({id:k,label:FACTIONS[k].ruler,color:FACTIONS[k].color,mark:FACTIONS[k].flag,meta:`${relLabel(k)}・${citiesOf(k).length} 城・兵 ${fmt(power(k))}${borderFactions(pl).includes(k)?'・接壤':''}`})));
   if(!f)return;const t=treaty(f);
   const kind=preKind||await choose(`對${FACTIONS[f].ruler}`,relLabel(f),Object.entries(DIPLO_KINDS).map(([k,d])=>{const busy=(k==='ally'&&t&&t.type==='ally')||(k==='truce'&&t);
+    if(d.ally&&!(t&&t.type==='ally'))return{id:k,label:d.label,dis:true,meta:'需先締結同盟'};if(d.coal&&!inCoal(f))return{id:k,label:d.label,dis:true,meta:'對方未加入反我聯軍'};
     return{id:k,label:d.label,dis:busy||F.gold<d.cost,meta:`${d.cost?'金 '+d.cost+'・':''}${d.desc}${busy?'・已生效':k==='gift'?'':`・成功率約 ${Math.round(diploChance(f,k,env0[0])*100)}%`}`};}));
   if(!kind)return;const d=DIPLO_KINDS[kind];if(F.gold<d.cost)return toast('金錢不足');
+  let jt=null;if(kind==='joint'){const ts=[...new Set(citiesOf(f).filter(c=>c.troops>=3000&&offsIn(c.name).length).flatMap(c=>ADJ[c.name]))].filter(n=>{const o=G.c[n].f;return o!==f&&o!==pl&&!friendly(f,o)&&!(o&&treaty(o));});
+    if(!ts.length)return toast(`${FACTIONS[f].ruler}周邊沒有可出兵的目標`);
+    jt=await choose('出兵目標',`請${FACTIONS[f].ruler}出兵攻打`,ts.map(n=>{const e=G.c[n];return{id:n,label:n,meta:`${e.f?FACTIONS[e.f].ruler+'軍':'中立'}・守軍 ${fmt(e.troops)}・城防 ${e.def}`,color:e.f?FACTIONS[e.f].color:'#666',mark:e.f?FACTIONS[e.f].flag:'民'};}));if(!jt)return;}
   const eid=await choose('選擇使者','智力與政治越高，成功率越高',env0.map(o=>({id:o.id,label:o.name,meta:`智 ${o.int}・政 ${o.pol}・魅 ${o.cha}${kind!=='gift'?`・成功率約 ${Math.round(diploChance(f,kind,o)*100)}%`:''}`})));if(eid===null||eid===undefined)return;
   const e=OF(eid);F.gold-=d.cost;e.done=true;const ok=R()<diploChance(f,kind,e);
-  if(G.set.anim){try{await diploScene({hostF:f,guestF:pl,envoy:e,kind,ok});}catch(err){console.error(err);endSafe();}}
+  if(G.set.anim){try{await diploScene({hostF:f,guestF:pl,envoy:e,kind,ok,
+    plea:kind==='joint'?`${e.name}：${jt}之敵，乃兩家共患，願貴主發兵討之！`:kind==='split'?`${e.name}：聯軍各懷鬼胎，${FACTIONS[f].ruler}公何苦替他人火中取栗？`:undefined,
+    reply:kind==='joint'?(ok?`${FACTIONS[f].ruler}：好！孤即刻點兵，出征${jt}！`:`${FACTIONS[f].ruler}：近來兵馬疲敝，恕難從命。`):kind==='split'?(ok?`${FACTIONS[f].ruler}：言之有理……孤這就退出盟約。`:`${FACTIONS[f].ruler}：盟約已定，休得多言！`):undefined});}catch(err){console.error(err);endSafe();}}
   const R_=FACTIONS[f].ruler;
   if(kind==='gift'){const g=12+Math.floor(e.pol/12);G.rel[f]=Math.min(100,G.rel[f]+g);toast(`${e.name}出使${R_}，贈禮修好，關係 +${g}`);}
   else if(kind==='ally'){if(ok){G.treaty[f]={type:'ally',until:G.turn+12};G.rel[f]=Math.min(100,G.rel[f]+10);toast(`${e.name}出使成功，與${R_}結為同盟（12 個月）`);}else{G.rel[f]=Math.max(0,G.rel[f]-5);toast(`${R_}拒絕結盟`);}}
   else if(kind==='truce'){if(ok){G.treaty[f]={type:'truce',until:G.turn+6};toast(`${e.name}出使成功，與${R_}停戰 6 個月`);}else{G.rel[f]=Math.max(0,G.rel[f]-5);toast(`${R_}拒絕停戰`);}}
-  else if(kind==='surrender'){if(ok)absorbFaction(f);else{G.rel[f]=Math.max(0,G.rel[f]-15);toast(`${R_}拒絕投降，關係惡化`);}}}
+  else if(kind==='surrender'){if(ok)absorbFaction(f);else{G.rel[f]=Math.max(0,G.rel[f]-15);toast(`${R_}拒絕投降，關係惡化`);}}
+  else if(kind==='joint'){if(ok){const b=allyDispatch(f,jt,null,null);if(b){syncArmies();toast(`${R_}應允出兵！${OF(b.offs[0]).name}率兵 ${fmt(b.troops)} 自${b.from}攻打${jt}`,4500);}else toast(`${R_}兵力不足，無法出兵`);}else{G.rel[f]=Math.max(0,G.rel[f]-3);toast(`${R_}婉拒出兵`);}}
+  else if(kind==='split'){if(ok)leaveCoalition(f,true);else{G.rel[f]=Math.max(0,G.rel[f]-8);toast(`${R_}拒絕退出聯軍`);}}}
 function absorbFaction(f){const pl=G.player,F=G.f[pl],E=G.f[f];const n=citiesOf(f).length;
   G.armies.filter(a=>a.f===f).forEach(a=>{const back=G.c[a.from];back.troops+=a.troops;a.offs.map(OF).forEach(o=>{o.army=null;o.c=a.from;});removeArmy(a);});
   citiesOf(f).forEach(c=>c.f=pl);G.o.filter(o=>o.f===f).forEach(o=>{o.f=pl;o.loy=o.name===FACTIONS[f].ruler?60:72;});
@@ -1920,9 +2078,9 @@ function absorbFaction(f){const pl=G.player,F=G.f[pl],E=G.f[f];const n=citiesOf(
   toast(`${FACTIONS[f].ruler}舉國歸順！獲得 ${n} 城`,4500);}
 function diploMonthly(){for(const f in FACTIONS){if(f===G.player||!G.f[f].alive)continue;const r=G.rel[f];const t=G.treaty[f];
     if(t&&t.until===G.turn){toast(`與${FACTIONS[f].ruler}的${t.type==='ally'?'同盟':'停戰'}已到期`);delete G.treaty[f];}
-    const tgt=citiesOf(G.player).length>=6?38:50;G.rel[f]=clamp(r+(r<tgt?1:r>tgt?-1:0)+(treaty(f)&&treaty(f).type==='ally'?1:0),0,100);}}
+    const tgt=citiesOf(G.player).length>=5?35:inCoal(f)?30:48;G.rel[f]=clamp(r+(r<tgt?1:r>tgt?-1:0)+(treaty(f)&&treaty(f).type==='ally'?1:0),0,100);}}
 function aiProposal(){if(G.turn<2||R()>.35)return null;const pl=G.player,pp=power(pl);const bd=borderFactions(pl);
-  for(const f of shuffle(Object.keys(FACTIONS).filter(k=>k!==pl&&G.f[k].alive&&!treaty(k)))){const pf=power(f),near=bd.includes(f);
+  for(const f of shuffle(Object.keys(FACTIONS).filter(k=>k!==pl&&G.f[k].alive&&!treaty(k)&&!inCoal(k)))){const pf=power(f),near=bd.includes(f);
     if(G.rel[f]>=62&&R()<.5)return{f,kind:'ally'};
     if(near&&pf<pp*.7&&R()<.4)return{f,kind:'truce'};
     if(near&&pf>pp*2.2&&G.rel[f]<55&&R()<.15)return{f,kind:'tribute'};}
@@ -1938,16 +2096,20 @@ async function handleProposal(pr){const f=pr.f,R_=FACTIONS[f].ruler,P=G.f[G.play
 
 // ================= 情勢 =================
 function showInfo(){const rows=Object.keys(FACTIONS).filter(k=>G.f[k].alive).map(k=>{const cs=citiesOf(k),tr=cs.reduce((s,c)=>s+c.troops,0)+G.armies.filter(a=>a.f===k).reduce((s,a)=>s+a.troops,0);return{k,cs:cs.length,tr,o:G.o.filter(o=>o.f===k).length};}).sort((a,b)=>b.cs-a.cs);const neu=Object.values(G.c).filter(c=>!c.f).length;
-  dlg('天下情勢',`<div class="list">${rows.map(r=>`<div class="item" style="cursor:default"><span class="seal" style="--c:${FACTIONS[r.k].color};width:30px;height:30px;font-size:16px">${FACTIONS[r.k].flag}</span><span class="nm">${FACTIONS[r.k].ruler}${r.k===G.player?'（我）':''}</span><span class="meta">${r.cs} 城・兵 ${fmt(r.tr)}・將 ${r.o}${r.k===G.player?'':`<br>${relLabel(r.k)}`}</span></div>`).join('')}</div><p class="sub">尚有中立城池 ${neu} 座</p>
+  dlg('天下情勢',`<div class="list">${rows.map(r=>`<div class="item" style="cursor:default"><span class="seal" style="--c:${FACTIONS[r.k].color};width:30px;height:30px;font-size:16px">${FACTIONS[r.k].flag}</span><span class="nm">${FACTIONS[r.k].ruler}${r.k===G.player?'（我）':''}</span><span class="meta">${r.cs} 城・兵 ${fmt(r.tr)}・將 ${r.o}${r.k===G.player?'':`<br>${relLabel(r.k)}${inCoal(r.k)?'・<b style="color:var(--bad)">聯軍</b>':''}`}</span></div>`).join('')}</div><p class="sub">尚有中立城池 ${neu} 座${G.coal?`<br><span style="color:var(--bad)">${esc(coalName())}：${G.coal.members.map(f=>esc(FACTIONS[f].ruler)).join('、')}（盟主 ${esc(FACTIONS[G.coal.leader].ruler)}，剩 ${G.coal.until-G.turn} 月）</span>`:''}</p>
     <div class="sect">近事</div><div style="font-size:12.5px;color:var(--muted);line-height:1.7;max-height:30vh;overflow:auto">${G.log.slice(0,25).map(esc).join('<br>')||'—'}</div>`,[{label:'關閉',value:0}]);}
 
 // ================= 戰鬥結算 =================
 async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
   if(tc.f===a.f){tc.troops+=a.troops;offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);return;}
+  if(tc.f&&friendly(a.f,tc.f)){if(a.f===G.player)toast(`${a.to}已歸${FACTIONS[tc.f].ruler}，${OF(a.offs[0]).name}回師`);else if(tc.f===G.player)toast(`${FACTIONS[a.f].ruler}軍因盟約撤回`);retreat(a);return;}
+  const sup=a.f===G.player?G.armies.filter(b=>b!==a&&b.support===G.player&&b.to===a.to&&b.prog>=1&&G.f[b.f].alive&&!friendly(b.f,tc.f)):[];
   const defF=tc.f,defOffs=defF?offsIn(a.to,defF):[];const pi=a.f===G.player||defF===G.player;
-  if(tc.troops<300&&!defOffs.length){tc.troops=0;if(pi)toast(`${OF(a.offs[0]).name}兵不血刃，佔領${a.to}`);await captureCity(a,defF,defOffs,offs,null);return;}
+  if(tc.troops<300&&!defOffs.length){sup.forEach(retreat);tc.troops=0;if(pi)toast(`${OF(a.offs[0]).name}兵不血刃，佔領${a.to}`);await captureCity(a,defF,defOffs,offs,null);return;}
   if(defF===G.player){for(const k of Object.keys(FACTIONS)){const t=treaty(k);if(!t||t.type!=='ally'||k===a.f||!G.f[k].alive)continue;const src=ADJ[a.to].map(n=>G.c[n]).filter(c=>c.f===k).sort((x,y)=>y.troops-x.troops)[0];
     if(src){const aid=Math.min(6000,Math.round(src.troops*.3));if(aid>=500){src.troops-=aid;tc.troops+=aid;toast(`盟友${FACTIONS[k].ruler}自${src.name}派兵 ${fmt(aid)} 馳援${a.to}！`,4500);}}}}
+  const supT=sup.reduce((s,b)=>s+b.troops,0),own0=a.troops;a.troops+=supT;
+  const allyTxt=sup.length?`盟友${[...new Set(sup.map(b=>FACTIONS[b.f].ruler))].join('、')}軍 ${fmt(supT)} 前來合擊！`:null;
   const gA=bestGen(offs),gD=bestGen(defOffs);let duel=null;
   if(gA&&gD&&!a.water&&gA.war>=70&&gD.war>=70&&R()<.6){
     if(pi&&G.set.watch){const mine=a.f===G.player?'A':'B';const myG=mine==='A'?gA:gD,foe=mine==='A'?gD:gA;
@@ -1961,12 +2123,13 @@ async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
   if(naval){if(duel)duel=null;qa=armyQuality([gA,...offs.filter(o=>o!==gA)])*navalSkill(a.f)*(a.port?1.1:1);qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)])*navalSkill(defF)*(specOf(a.to)==='港'?1.1:1);
     qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*.25);const wg=res.winner==='att'?gA:gD;if(wg&&wg.int>=82&&R()<.6){fire=res.winner;if(fire==='att')res.defLoss=Math.min(tc.troops,Math.round(res.defLoss*1.15));else res.attLoss=Math.min(a.troops,Math.round(res.attLoss*1.15));}}
   else{const sg=Math.min(4,a.siege||0);qa+=.04*sg;qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*(1-.2*sg));}
-  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=duel&&duel.shown?(duel.refused?`${dW.name}耀武揚威，${dL.name}避戰不出`:`${dW.name}陣前${duel.ko?'斬將':'得勝'}，士氣大振！`):null;
+  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=(duel&&duel.shown?(duel.refused?`${dW.name}耀武揚威，${dL.name}避戰不出`:`${dW.name}陣前${duel.ko?'斬將':'得勝'}，士氣大振！`):null)||allyTxt;
   const info={att:{f:a.f,gen:gA,troops:a.troops,siege:naval?0:(a.siege||0)},def:{f:defF,gen:gD,troops:tc.troops,city:a.to},res,duel:duel&&duel.shown?null:duel,duelBanner,fire,naval,playerSide:a.f===G.player?'att':defF===G.player?'def':null};
-  if(pi){let w=G.set.watch;if(w){w=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),`<p>${FACTIONS[a.f].ruler}軍 ${esc(gA?gA.name:'')} 率${naval?'水軍':'兵'} ${fmt(a.troops)} ${naval?'駛抵'+a.to+'江面，守軍戰船出港迎擊！':'抵達'+a.to+'城下！'}守將 ${esc(gD?gD.name:'守城士卒')}，守軍 ${fmt(tc.troops)}。${!naval&&a.siege?`攻方攜帶攻城兵器 ${a.siege} 座。`:''}</p>`,[{label:'直接結算',value:false},{label:naval?'觀看 3D 水戰':'觀看 3D 戰鬥',value:true,cls:'primary'}]);}
+  if(pi){let w=G.set.watch;if(w){w=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),`<p>${FACTIONS[a.f].ruler}軍 ${esc(gA?gA.name:'')} 率${naval?'水軍':'兵'} ${fmt(a.troops)} ${naval?'駛抵'+a.to+'江面，守軍戰船出港迎擊！':'抵達'+a.to+'城下！'}守將 ${esc(gD?gD.name:'守城士卒')}，守軍 ${fmt(tc.troops)}。${!naval&&a.siege?`攻方攜帶攻城兵器 ${a.siege} 座。`:''}${allyTxt?esc(allyTxt):''}</p>`,[{label:'直接結算',value:false},{label:naval?'觀看 3D 水戰':'觀看 3D 戰鬥',value:true,cls:'primary'}]);}
     if(w){try{await (naval?navalScene(info):battleScene(info));}catch(e){console.error(e);endSafe();}}}
   if(naval&&fire)logMsg(`${a.to}水戰：${(fire==='att'?gA:gD).name}施展火攻`);
   a.troops=Math.max(0,a.troops-res.attLoss);tc.troops=Math.max(0,tc.troops-res.defLoss);
+  if(sup.length){const k=a.troops/Math.max(1,own0+supT);let used=0;sup.forEach(b=>{b.troops=Math.round(b.troops*k);used+=b.troops;retreat(b);});a.troops=Math.max(0,a.troops-used);if(G.set.watch)logMsg(`${a.to}之戰：${allyTxt}`);}
   if(duel)logMsg(`${a.to}陣前單挑：${(duel.win==='att'?gA:gD).name}擊敗${(duel.win==='att'?gD:gA).name}`);
   if(res.winner==='att'){tc.def=Math.round(tc.def*.7);await captureCity(a,defF,defOffs,offs,info);}
   else{tc.def=Math.max(100,Math.round(tc.def*.93));retreat(a);if(pi)await dlg(a.f===G.player?'攻城失利':'守城成功',`<p>${a.f===G.player?`我軍攻打${a.to}失利，損兵 ${fmt(res.attLoss)}，殘部撤回。`:`${a.to}守軍擊退${FACTIONS[a.f].ruler}軍！敵軍折損 ${fmt(res.attLoss)}，我軍損失 ${fmt(res.defLoss)}。`}</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);else logMsg(`${FACTIONS[a.f].ruler}軍攻打${a.to}失利`);}}
@@ -1994,28 +2157,69 @@ function aiTurn(f){const F=G.f[f],cs=citiesOf(f),warn=[];if(!cs.length)return wa
   const border=c=>ADJ[c.name].some(n=>G.c[n].f!==f);
   for(const c of shuffle(cs.slice())){const cap=capOf(c.name),bd=border(c),want=bd?9000+CITY_BY[c.name].size*5000:4000+CITY_BY[c.name].size*1500;
     for(const o of idleOffs(c.name).slice(0,3)){if(F.gold<300)break;
-      if(c.troops<want&&F.gold>=400&&c.pop>50000){const amt=Math.round((1000+o.cha*15)*1.25);c.troops+=amt;c.pop-=amt;F.gold-=400;c.train=Math.round((c.train||0)*(c.troops-amt)/c.troops);}
+      if(c.troops<want&&F.gold>=400&&c.pop>50000){const amt=Math.round((1000+o.cha*15)*1.35);c.troops+=amt;c.pop-=amt;F.gold-=400;c.train=Math.round((c.train||0)*(c.troops-amt)/c.troops);}
       else if(bd&&(c.train||0)<75&&F.gold>=200&&R()<.5){c.train=Math.min(100,(c.train||0)+10+Math.floor(o.lead/8));F.gold-=200;}
       else{const ks=['commerce','farm','def'].filter(k=>c[k]<cap[k]);if(!ks.length)continue;const k=ks.sort((a,b)=>c[a]/cap[a]-c[b]/cap[b])[0];c[k]=Math.min(cap[k],c[k]+15+Math.floor(o[k==='def'?'lead':'pol']/4));F.gold-=300;}o.done=true;}
     if(bd&&(c.siege||0)<3&&F.gold>2000&&R()<.35){c.siege=(c.siege||0)+1;F.gold-=siegeCost(c.name);}
     if(!bd&&c.troops>want+2000){const to=ADJ[c.name].map(n=>G.c[n]).filter(x=>x.f===f&&border(x)).sort((a,b)=>a.troops-b.troops)[0]||ADJ[c.name].map(n=>G.c[n]).filter(x=>x.f===f).sort((a,b)=>a.troops-b.troops)[0];if(to){const n=c.troops-want;c.troops-=n;to.troops+=n;}}}
-  const atk=cs.length>=4?2:1;let made=0;
-  for(let k=0;k<atk;k++){if(G.turn<2||R()>.62)continue;let best=null;
+  const coal=inCoal(f);const atk=(cs.length>=4?2:1)+(coal?1:0);let made=0;
+  for(let k=0;k<atk;k++){if(G.turn<2||R()>(coal?.9:.72))continue;let best=null;
     for(const c of cs){const all=offsIn(c.name);if(!all.length||c.troops<4500||c.cool>G.turn)continue;const g=bestGen(all);
-      for(const n of ADJ[c.name]){const e=G.c[n];if(e.f===f||G.armies.some(x=>x.f===f&&x.to===n))continue;if(e.f===G.player&&(G.turn<4||treaty(f)||G.rel[f]>=80))continue;
-        const eq=armyQuality([bestGen(e.f?offsIn(n):[])]);const sgc=isWater(c.name,n)?0:Math.min(4,c.siege||0);const r=trainMul(c.train)/trainMul(e.train)*c.troops*.7*(armyQuality([g])+.04*sgc)*(isWater(c.name,n)?navalSkill(f)/navalSkill(e.f):1)/((e.troops+300)*eq*(1+e.def*(1-.2*sgc)/1500));if(r>1.35){if(e.f===G.player&&r<(G.turn>=12?1.15:1.25))continue;const s=r+(e.f?0:1.5)+(e.f===G.player&&G.rel[f]<30?.3:0)+R()*.4;if(!best||s>best.s)best={s,c,n,all,g};}}}
+      for(const n of ADJ[c.name]){const e=G.c[n];if(e.f===f||G.armies.some(x=>x.f===f&&x.to===n))continue;if(e.f&&e.f!==G.player&&friendly(f,e.f))continue;if(e.f===G.player&&(G.turn<4||treaty(f)||(G.rel[f]>=80&&!coal)))continue;
+        const eq=armyQuality([bestGen(e.f?offsIn(n):[])]);const sgc=isWater(c.name,n)?0:Math.min(4,c.siege||0);const r=trainMul(c.train)/trainMul(e.train)*c.troops*.7*(armyQuality([g])+.04*sgc)*(isWater(c.name,n)?navalSkill(f)/navalSkill(e.f):1)/((e.troops+300)*eq*(1+e.def*(1-.2*sgc)/1500));const th=e.f===G.player?(coal?1.0:G.turn>=12?1.1:1.2):1.25;if(r>th){const s=r+(e.f?0:1.5)+(e.f===G.player&&G.rel[f]<30?.3:0)+(e.f===G.player&&coal?1.2:0)+R()*.4;if(!best||s>best.s)best={s,c,n,all,g};}}}
     if(best){const dep=best.all.filter(o=>o!==best.g).sort((a,b)=>b.war-a.war).slice(0,1);const keep=best.all.length>1?[best.g,...dep].slice(0,best.all.length-1):[best.g];
       const a=dispatch(f,best.c.name,best.n,keep,Math.round(best.c.troops*.7),isWater(best.c.name,best.n)?0:(best.c.siege||0));made++;if(G.c[best.n].f===G.player){warn.push(a);G.rel[f]=Math.max(0,G.rel[f]-10);}else logMsg(`${FACTIONS[f].ruler}軍出兵${best.n}`);}}
   return warn;}
+
+// ================= 反我聯軍 =================
+const inCoal=f=>!!(G&&G.coal&&G.coal.members.includes(f));
+function friendly(a,b){if(!a||!b)return false;if(a===b)return true;const pl=G.player;if(a===pl)return !!treaty(b);if(b===pl)return !!treaty(a);return inCoal(a)&&inCoal(b);}
+const coalName=()=>`反${FACTIONS[G.player].ruler}聯軍`;
+function leaveCoalition(f,byPlayer){const C=G.coal;if(!C)return;C.members=C.members.filter(x=>x!==f);if(byPlayer){G.rel[f]=Math.min(100,G.rel[f]+10);G.treaty[f]={type:'truce',until:G.turn+6};toast(`${FACTIONS[f].ruler}退出${coalName()}，並與我停戰 6 個月`,4500);}
+  if(C.members.length<2||!C.members.includes(C.leader)&&C.members.length<3){G.coal=null;G.coalCD=G.turn+8;toast(`${coalName()}群龍無首，就此瓦解！`,4500);logMsg('反我聯軍瓦解');}
+  else if(!C.members.includes(C.leader))C.leader=C.members.slice().sort((a,b)=>power(b)-power(a))[0];}
+function coalitionMonthly(){const pl=G.player,C=G.coal;
+  if(C){C.members=C.members.filter(f=>G.f[f].alive&&!(treaty(f)&&treaty(f).type==='ally'));
+    if(C.until<=G.turn||C.members.length<2){G.coal=null;G.coalCD=G.turn+8;toast(`${coalName()}${C.until<=G.turn?'盟約期滿，':''}各自散去`,4500);logMsg('反我聯軍瓦解');return null;}
+    if(!C.members.includes(C.leader))C.leader=C.members.slice().sort((a,b)=>power(b)-power(a))[0];
+    const bd=borderFactions(pl),front=C.members.filter(f=>bd.includes(f));
+    for(const f of C.members){if(front.includes(f)||!front.length)continue;const src=citiesOf(f).sort((a,b)=>b.troops-a.troops)[0];if(!src||src.troops<7000||R()>.5)continue;
+      const to=pick(front);const tc=citiesOf(to).filter(c=>ADJ[c.name].some(n=>G.c[n].f===pl)).sort((a,b)=>a.troops-b.troops)[0];if(!tc)continue;const n=Math.round(src.troops*.25/100)*100;src.troops-=n;tc.troops+=n;logMsg(`聯軍：${FACTIONS[f].ruler}遣兵 ${fmt(n)} 增援${tc.name}`);}
+    return null;}
+  if(G.turn<8||(G.coalCD||0)>G.turn)return null;
+  const alive=Object.keys(FACTIONS).filter(k=>k!==pl&&G.f[k].alive);if(alive.length<2)return null;
+  const pp=power(pl),pc=citiesOf(pl).length,top=Math.max(...alive.map(power));
+  if(!(pc>=5||pp>top*1.35||(pc>=4&&pp>top)))return null;if(R()>.35)return null;
+  const bd=borderFactions(pl);const cand=alive.filter(f=>!treaty(f)&&G.rel[f]<65).sort((a,b)=>(bd.includes(b)-bd.includes(a))||(G.rel[a]-G.rel[b]));
+  if(!cand.some(f=>bd.includes(f)))return null;
+  const members=cand.slice(0,Math.min(6,2+Math.floor(pc/3)));if(members.length<2)return null;
+  const leader=members.slice().sort((a,b)=>power(b)-power(a))[0];
+  G.coal={members,leader,until:G.turn+12};members.forEach(f=>G.rel[f]=Math.max(0,G.rel[f]-15));logMsg(`${members.map(f=>FACTIONS[f].ruler).join('、')}會盟，結成${coalName()}`);
+  return G.coal;}
+// 聯軍合擊：盟員出兵攻我某城時，鄰近的其他盟員同時出兵
+function coalitionJoin(warn){const out=[];const done={};
+  for(const a of warn){if(!inCoal(a.f)||!G.armies.includes(a))continue;const t=a.to;done[t]=done[t]||0;
+    for(const m of shuffle(G.coal.members.slice())){if(done[t]>=2)break;if(m===a.f||G.armies.some(x=>x.f===m&&x.to===t))continue;
+      const src=citiesOf(m).filter(c=>ADJ[c.name].includes(t)&&c.troops>=4000&&offsIn(c.name).length>=1&&!(c.cool>G.turn)).sort((x,y)=>y.troops-x.troops)[0];if(!src)continue;
+      const offs=offsIn(src.name).slice().sort((x,y)=>(y.lead+y.war)-(x.lead+x.war));const take=offs.length>1?offs.slice(0,Math.min(2,offs.length-1)):offs;
+      const b=dispatch(m,src.name,t,take,Math.round(src.troops*.6/100)*100,isWater(src.name,t)?0:(src.siege||0));b.turns=Math.max(b.turns,a.turns);done[t]++;out.push(b);G.rel[m]=Math.max(0,G.rel[m]-6);}}
+  return out;}
+async function coalitionReport(co){const pl=G.player;const names=co.members.map(f=>FACTIONS[f].ruler);
+  if(G.set.anim){try{await coalitionScene(co);}catch(e){console.error(e);endSafe();}}
+  const env=envoysAvail()[0];const F=G.f[pl];const tgt=co.members.slice().sort((a,b)=>G.rel[b]-G.rel[a]).find(f=>f!==co.leader)||co.members[0];
+  const i=await showReport({kicker:'天下大勢',stamp:'盟',title:`諸侯會盟・${coalName()}`,text:`${names.join('、')}歃血為盟，共推${FACTIONS[co.leader].ruler}為盟主，誓言合力討伐我軍！聯軍盟約 12 個月，期間各路諸侯將聯手進攻、互相支援。`,
+    options:[{label:'遣使離間',sub:env&&F.gold>=1500?`金 1500・離間${FACTIONS[tgt].ruler}（約 ${Math.round(diploChance(tgt,'split',env)*100)}%）`:'需金 1500 與可出使武將'},{label:'嚴陣以待'}]});
+  if(i===0){if(!env||F.gold<1500)return toast('金錢不足或無可出使武將');F.gold-=1500;env.done=true;if(R()<diploChance(tgt,'split',env))leaveCoalition(tgt,true);else{G.rel[tgt]=Math.max(0,G.rel[tgt]-8);toast(`${env.name}離間${FACTIONS[tgt].ruler}失敗`);}}}
 
 // ================= 每月結算 / 事件 =================
 function economy(){for(const c of Object.values(G.c))if(c.train)c.train=Math.max(0,c.train-1);for(const c of Object.values(G.c))if(!c.f&&c.base&&c.troops<c.base)c.troops=Math.min(c.base,Math.round(c.troops+c.base*.03));
   for(const f in G.f){if(!G.f[f].alive)continue;const F=G.f[f],cs=citiesOf(f);let g=0,fd=0,up=0;
   for(const c of cs){const i=cityIncome(c);g+=i.g;fd+=i.fd;up+=c.troops/25;c.pop=Math.round(c.pop*(1.002+c.farm/500000));}
   up+=G.armies.filter(a=>a.f===f).reduce((s,a)=>s+a.troops/25,0);if(f===G.player)G.lastInc={g:Math.round(g),fd:Math.round(fd),up:Math.round(up)};
-  if(f!==G.player){g*=1.25;fd*=1.25;}F.gold+=Math.round(g);F.food+=Math.round(fd-up);if(F.food<0){F.food=0;cs.forEach(c=>c.troops=Math.round(c.troops*.92));if(f===G.player)toast('糧草斷絕，士兵紛紛逃亡！');}}}
-function enemyReport(a){const g=OF(a.offs[0]),F=FACTIONS[a.f],c=G.c[a.to],P=G.f[G.player];
-  return{kicker:'急報',stamp:'急',title:`${F.ruler}軍來犯`,text:`${F.ruler}麾下${g.name}率兵 ${fmt(a.troops)}，自${a.from}出發，直撲我${a.to}！預計${a.turns>1?a.turns+'個月後':'下月'}兵臨城下。${a.to}守軍 ${fmt(c.troops)}，城防 ${c.def}。`,
+  if(f!==G.player){g*=1.4;fd*=1.4;}F.gold+=Math.round(g);F.food+=Math.round(fd-up);if(F.food<0){F.food=0;cs.forEach(c=>c.troops=Math.round(c.troops*.92));if(f===G.player)toast('糧草斷絕，士兵紛紛逃亡！');}}}
+function enemyReport(list){list=[].concat(list);const a=list[0],g=OF(a.offs[0]),F=FACTIONS[a.f],c=G.c[a.to],P=G.f[G.player];const multi=list.length>1;const tot=list.reduce((s,x)=>s+x.troops,0);
+  return{kicker:multi?'聯軍合擊':'急報',stamp:multi?'盟':'急',title:multi?`${list.length} 路聯軍合擊${a.to}`:`${F.ruler}軍來犯`,text:multi?`${list.map(x=>`${FACTIONS[x.f].ruler}麾下${OF(x.offs[0]).name}率兵 ${fmt(x.troops)} 自${x.from}`).join('；')}，同時殺奔我${a.to}！合計 ${fmt(tot)} 大軍，預計${a.turns>1?a.turns+'個月後':'下月'}兵臨城下。${a.to}守軍 ${fmt(c.troops)}，城防 ${c.def}。`
+      :`${F.ruler}麾下${g.name}率兵 ${fmt(a.troops)}，自${a.from}出發，直撲我${a.to}！預計${a.turns>1?a.turns+'個月後':'下月'}兵臨城下。${a.to}守軍 ${fmt(c.troops)}，城防 ${c.def}。`,
     options:[{label:'緊急徵兵',sub:'金 400・兵 +2000',fn:()=>{if(P.gold<400)return toast('金錢不足');P.gold-=400;c.troops+=2000;c.pop-=2000;toast(`${a.to}緊急徵兵 2000`);}},
       {label:'加固城防',sub:'金 300・城防 +150',fn:()=>{if(P.gold<300)return toast('金錢不足');P.gold-=300;c.def=Math.min(capOf(a.to).def,c.def+150);toast(`${a.to}城防加固`);}},{label:'知道了'}]};}
 function rollEvent(){if(R()>.3)return null;const cs=citiesOf(G.player);if(!cs.length)return null;const c=pick(cs),F=G.f[G.player],cd=CITY_BY[c.name];const k=pick(['locust','flood','rebel','plague','harvest','caravan','talent','rebel']);
@@ -2032,11 +2236,13 @@ function rollEvent(){if(R()>.3)return null;const cs=citiesOf(G.player);if(!cs.le
 async function endTurn(){if(BUSY||!G.player)return;AU.init();BUSY=true;closeSheet();refreshUI();
   try{
     G.armies.forEach(a=>a.prog=Math.min(1,a.prog+1/a.turns));syncArmies();await animateArmies(1400);
-    const arr=G.armies.filter(a=>a.prog>=1);arr.sort((a,b)=>(b.f===G.player||G.c[b.to].f===G.player)-(a.f===G.player||G.c[a.to].f===G.player));
+    const arr=G.armies.filter(a=>a.prog>=1);const pri=a=>(a.f===G.player?3:G.c[a.to].f===G.player?2:0)-(a.support?1:0);arr.sort((a,b)=>pri(b)-pri(a));
     for(const a of arr){if(!G.armies.includes(a))continue;if(!G.f[a.f].alive){removeArmy(a);continue;}await resolveArrival(a);refreshMap();refreshUI();if(G.over)break;}
-    if(!G.over){const warn=[];for(const f of shuffle(Object.keys(FACTIONS))){if(f===G.player||!G.f[f].alive)continue;warn.push(...aiTurn(f));}
+    if(!G.over){const co=coalitionMonthly();const warn=[];for(const f of shuffle(Object.keys(FACTIONS))){if(f===G.player||!G.f[f].alive)continue;warn.push(...aiTurn(f));}warn.push(...coalitionJoin(warn));if(warn.length)syncArmies();
       G.month++;if(G.month>12){G.month=1;G.year++;}G.turn++;economy();diploMonthly();if(G.lastInc){const L=G.lastInc;toast(`${G.month}月收支：金 +${fmt(L.g)}，糧 +${fmt(L.fd)}，軍糧 −${fmt(L.up)}`,4200);}G.o.forEach(o=>o.done=false);refreshMap();refreshUI();
-      for(const a of warn)if(G.armies.includes(a))await courierReport(enemyReport(a),a.f);
+      if(co)await coalitionReport(co);
+      const grp={};for(const a of warn)if(G.armies.includes(a))(grp[a.to]=grp[a.to]||[]).push(a);
+      for(const t in grp)await courierReport(enemyReport(grp[t]),grp[t][0].f);
       const ev=rollEvent();if(ev){if(ev.courier)await courierReport(ev,G.player);else toast(ev.text);}
       const pr=aiProposal();if(pr)await handleProposal(pr);}
   }catch(e){console.error(e);}
@@ -2052,14 +2258,50 @@ function clearArmyModels(){for(const id in MAP.armyObj){MAP.scene.remove(MAP.arm
 
 // ================= 標題 =================
 function showTitle(){const t=$('#title');$('#ui').hidden=true;MAP.titleSpin=true;const has=!!loadRaw();
-  G=newState(null);clearArmyModels();refreshMap();
-  t.innerHTML=`<div class="logo">群雄逐鹿</div><div class="tag">建安三年・天下三維</div>
-  <p class="lead">一百九十八年，漢室衰微，群雄並起。十一路諸侯各據一城，起兵皆為兵 5000、糧 10000、金 6000，唯各城物產與收入不同；其餘二十六城由地方豪強把守。治理城池、招賢納士、遣使合縱連橫，派遣將軍出征，一城一城打下天下。</p>
+  G=newState(null);clearArmyModels();refreshMap();const nF=Object.keys(FACTIONS).length,neu=Object.values(G.c).filter(c=>!c.f).length;
+  t.innerHTML=`<div class="logo">群雄逐鹿</div><div class="tag">建安三年・天下三維・困難</div>
+  <p class="lead">一百九十八年，漢室衰微，群雄並起。${nF} 路諸侯各據一城，起兵皆為兵 ${fmt(START_RES.troops)}、糧 ${fmt(START_RES.food)}、金 ${fmt(START_RES.gold)}；其餘 ${neu} 城由地方豪強把守。勢力一旦坐大，各路諸侯便會會盟討伐——善用外交、合縱連橫，與盟友合擊強敵，方能一統天下。</p>
   ${has?'<button class="btn primary" id="tCont" style="min-width:220px">繼續上次的天下</button>':''}
-  <div class="flist">${Object.entries(FACTIONS).map(([k,f])=>`<button class="fcard panel" data-f="${k}"><span class="seal" style="--c:${f.color}">${f.flag}</span><span><b>${f.ruler}</b><span>${CAPITALS[k]}${specOf(CAPITALS[k])?'・'+specOf(CAPITALS[k]):''}・月收 金 ${cityIncome(G.c[CAPITALS[k]]).g}</span><br><span>${f.blurb}</span></span></button>`).join('')}</div>
+  <div class="flist"><button class="fcard panel" id="tCustom" style="border-color:var(--bronze)"><span class="seal" style="--c:#b5322a">創</span><span><b>自創勢力</b><span>自訂君主與文武共 5 人，任選一座城自立</span></span></button>
+  ${Object.entries(FACTIONS).map(([k,f])=>`<button class="fcard panel" data-f="${k}"><span class="seal" style="--c:${f.color}">${f.flag}</span><span><b>${f.ruler}</b><span>${CAPITALS[k]}${specOf(CAPITALS[k])?'・'+specOf(CAPITALS[k]):''}・月收 金 ${cityIncome(G.c[CAPITALS[k]]).g}</span><br><span>${f.blurb}</span></span></button>`).join('')}</div>
   <p class="lead" style="font-size:12px;color:var(--muted)">地圖：單指拖曳移動、雙指縮放旋轉；點選城池下達命令。</p>`;t.hidden=false;
   t.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>startGame(newState(b.dataset.f)));
-  const c=$('#tCont');if(c)c.onclick=()=>{try{const st=JSON.parse(loadRaw());st.rel=st.rel||{};st.treaty=st.treaty||{};for(const k in FACTIONS)if(st.rel[k]==null)st.rel[k]=50;startGame(st);}catch(e){toast('存檔讀取失敗');}};}
+  $('#tCustom').onclick=async()=>{const cu=await createCustom();if(cu)startGame(newState('cus',cu));};
+  const c=$('#tCont');if(c)c.onclick=()=>{try{const st=JSON.parse(loadRaw());registerCustom(st.custom||null);st.rel=st.rel||{};st.treaty=st.treaty||{};for(const k in FACTIONS){if(st.rel[k]==null)st.rel[k]=50;if(!st.f[k])st.f[k]={gold:0,food:0,alive:false};}startGame(st);}catch(e){console.error(e);toast('存檔讀取失敗');}};}
+// ================= 自創勢力 =================
+const ROLE_T={猛將:[[70,88],[86,97],[25,55],[20,50],[50,80]],統帥:[[85,95],[72,88],[62,82],[40,66],[62,86]],謀士:[[40,75],[15,45],[88,98],[66,88],[50,82]],政才:[[30,62],[15,40],[70,88],[88,98],[70,90]],全才:[[72,86],[66,82],[70,86],[66,82],[72,88]]};
+const CUS_COLORS=['#e0b040','#ff7a3d','#e04f8a','#7a5cff','#22b8a8','#9acd32','#5aa0ff','#f2f2f2'];
+function rollStats(role,ruler){const T=ROLE_T[role]||ROLE_T.全才;const v=T.map(([a,b])=>a+Math.floor(R()*(b-a+1)));if(ruler)v[4]=Math.max(v[4],82+Math.floor(R()*12));return{lead:v[0],war:v[1],int:v[2],pol:v[3],cha:v[4]};}
+function createCustom(){return new Promise(res=>{
+  const used=new Set([...OFFICER_DATA.split('\n').map(l=>l.split(',')[0]),...LADIES_DATA.map(l=>l.name)]);
+  const P=[{name:'',role:'全才',female:false},{name:'',role:'猛將',female:false},{name:'',role:'統帥',female:false},{name:'',role:'謀士',female:false},{name:'',role:'政才',female:false}];
+  const DEF=['李玄','韓烈','趙破虜','顧言','孫明'];P.forEach((p,i)=>{p.name=DEF[i];Object.assign(p,rollStats(p.role,i===0));});
+  let color=CUS_COLORS[0];
+  const row=(p,i)=>`<div class="cf-p" data-i="${i}"><div class="cf-h"><span class="cf-tag">${i===0?'君主':'部下 '+i}</span>
+      <input class="cf-in" data-k="name" maxlength="4" value="${esc(p.name)}" aria-label="${i===0?'君主姓名':'部下姓名'}">
+      <select class="cf-in" data-k="role" aria-label="類型">${Object.keys(ROLE_T).map(r=>`<option ${r===p.role?'selected':''}>${r}</option>`).join('')}</select>
+      <select class="cf-in" data-k="female" aria-label="性別"><option value="0" ${p.female?'':'selected'}>男</option><option value="1" ${p.female?'selected':''}>女</option></select>
+      <button class="btn cf-roll" data-roll="${i}" aria-label="重擲能力">擲</button></div>
+      <div class="cf-st">統 <b>${p.lead}</b>　武 <b>${p.war}</b>　智 <b>${p.int}</b>　政 <b>${p.pol}</b>　魅 <b>${p.cha}</b></div></div>`;
+  const m=modal(`<h3>自創勢力</h3><div class="sub">自訂君主與四名文武部下（共 5 人，與其他諸侯相同）。類型決定能力傾向，按「擲」可重擲能力。</div>
+    <div class="cf-grid"><label>旗號<input class="cf-in" id="cfFlag" maxlength="1" value="玄"></label><label>國號<input class="cf-in" id="cfDyn" maxlength="2" value="" placeholder="同旗號"></label></div>
+    <div class="cf-col" id="cfCol">${CUS_COLORS.map(c=>`<button class="cf-sw ${c===color?'on':''}" data-c="${c}" style="--c:${c}" aria-label="旗色"></button>`).join('')}</div>
+    <div id="cfPeople">${P.map(row).join('')}</div>
+    <p class="cf-err" id="cfErr" role="alert"></p><div class="row"><button class="btn" id="cfX">取消</button><button class="btn primary" id="cfOK">下一步：選擇城池</button></div>`);m.classList.add('ztop');const err=t=>{$('#cfErr').textContent=t;};
+  const redraw=i=>{const el=m.querySelector(`.cf-p[data-i="${i}"]`);el.outerHTML=row(P[i],i);bind();};
+  function bind(){m.querySelectorAll('.cf-p').forEach(el=>{const i=+el.dataset.i;el.querySelectorAll('[data-k]').forEach(inp=>{inp.onchange=inp.oninput=()=>{const k=inp.dataset.k;if(k==='name')P[i].name=inp.value.trim();else if(k==='female')P[i].female=inp.value==='1';else if(k==='role'&&inp.value!==P[i].role){P[i].role=inp.value;Object.assign(P[i],rollStats(P[i].role,i===0));redraw(i);}};});
+    el.querySelector('[data-roll]').onclick=()=>{Object.assign(P[i],rollStats(P[i].role,i===0));AU.click&&AU.click();redraw(i);};});}
+  bind();
+  m.querySelectorAll('.cf-sw').forEach(b=>b.onclick=()=>{color=b.dataset.c;m.querySelectorAll('.cf-sw').forEach(x=>x.classList.toggle('on',x===b));});
+  $('#cfX').onclick=()=>{closeModal();res(null);};
+  $('#cfOK').onclick=async()=>{const names=P.map(p=>p.name.trim());const flag=$('#cfFlag').value.trim(),dyn=$('#cfDyn').value.trim()||flag;
+    if(names.some(n=>!n))return err('每位人物都要取名');if(new Set(names).size<5)return err('人物名字不能重複');const dup=names.find(n=>used.has(n));if(dup)return err(`「${dup}」與現有人物同名，請改名`);if(!flag)return err('請輸入一字旗號');
+    const snap=P.map(p=>Object.assign({},p,{name:p.name.trim()}));closeModal();
+    const ents=CITIES.filter(cd=>!Object.values(CAPITALS).includes(cd.name));
+    setTimeout(()=>$('#modal').classList.add('ztop'),0);const city=await choose('選擇自立之城','起兵：兵 5,000・糧 50,000・金 5,000（與其他諸侯相同）',ents.map(cd=>{const c=G.c[cd.name],i=cityIncome(c),sp=specOf(cd.name);const nb=[...new Set(ADJ[cd.name].map(n=>Object.keys(CAPITALS).find(k=>CAPITALS[k]===n)).filter(Boolean))].map(k=>FACTIONS[k].ruler);
+      return{id:cd.name,label:cd.name,meta:`${'大中小'[3-cd.size]||'小'}城・月收 金 ${i.g}・糧 ${fmt(i.fd)}${sp?'・'+sp:''}${nb.length?'・鄰 '+nb.join('、'):'・周邊無諸侯'}`};}));
+    if(!city){res(null);return;}
+    res({ruler:snap[0].name,flag,dyn,color,city,offs:snap.map(p=>({name:p.name,lead:p.lead,war:p.war,int:p.int,pol:p.pol,cha:p.cha,female:p.female}))});};});}
 function startGame(st){AU.init();G=st;VOICE.on=G.set.voice!==false;$('#title').hidden=true;MAP.titleSpin=false;$('#ui').hidden=false;clearArmyModels();BUSY=false;
   refreshMap();refreshUI();const cap=citiesOf(G.player).sort((a,b)=>CITY_BY[b.name].size-CITY_BY[a.name].size)[0];if(cap)flyTo(cap.name,48);
   toast(`${G.year}年${G.month}月，${FACTIONS[G.player].ruler}的霸業由此開始。點選城池下達命令。`,5000);saveGame();}
