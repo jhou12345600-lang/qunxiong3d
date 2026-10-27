@@ -888,11 +888,11 @@ function refreshMap(){if(!MAP.scene)return;for(const c of CITIES)refreshCityMode
 function armyPos(a,prog){const pts=MAP.roads[a.from+'-'+a.to]||[cityPos(a.from),cityPos(a.to)];const t=clamp(prog,0,1)*(pts.length-1),i=Math.min(pts.length-2,Math.floor(t)),k=t-i;return pts[i].clone().lerp(pts[i+1],k);}
 function syncArmies(){
   for(const id in MAP.armyObj){if(!G.armies.find(a=>a.id==id)){const o=MAP.armyObj[id];MAP.scene.remove(o.group);delete MAP.armyObj[id];}}
-  for(const a of G.armies){let o=MAP.armyObj[a.id];const f=FACTIONS[a.f],gen=G.o.find(x=>x.id===a.offs[0]);
+  for(const a of G.armies){let o=MAP.armyObj[a.id];const f=FACTIONS[a.f],gen=G.o.find(x=>x.id===a.offs[0])||{name:'輜重隊',f:a.f,war:40,int:40,lead:40,pol:40,cha:40};
     if(!o){const grp=new THREE.Group();let hs=null,ship=null;if(isWater(a.from,a.to)){ship=makeShip(f.color,f.flag,false);ship.g.scale.setScalar(.24);grp.add(ship.g);}else{hs=makeHorse('#5a3e28',f.color);const hu=makeHuman(Object.assign(lookFor(gen),{weapon:'spear'}));mount(hu,hs);backFlag(hu,f.flag,f.color);hs.root.scale.setScalar(.55);grp.add(hs.root);}
       const hit=new THREE.Mesh(cyl(1.1,1.1,2,8),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.8;hit.userData.army=a.id;grp.add(hit);
       MAP.scene.add(grp);o=MAP.armyObj[a.id]={group:grp,horse:hs,ship,hit,shown:a.prog,label:null,key:''};}
-    const key=`${gen.name} ${fmt(a.troops)}`;if(o.key!==key){if(o.label){o.group.remove(o.label);o.label.material.map.dispose();}o.label=labelSprite(gen.name,'兵 '+fmt(a.troops),f.color);o.label.scale.set(3.2,.96,1);o.label.position.y=2.1;o.group.add(o.label);o.key=key;}
+    const key=`${gen.name} ${fmt(a.troops)}`;if(o.key!==key){if(o.label){o.group.remove(o.label);o.label.material.map.dispose();}o.label=labelSprite(a.convoy?gen.name+'・輸送':gen.name,'兵 '+fmt(a.troops),f.color);o.label.scale.set(3.2,.96,1);o.label.position.y=2.1;o.group.add(o.label);o.key=key;}
     const p=armyPos(a,o.shown);o.group.position.copy(p);const q=armyPos(a,Math.min(1,o.shown+.05));o.group.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);}
 }
 function animateArmies(ms){return new Promise(res=>{const st=performance.now(),from={};for(const a of G.armies){const o=MAP.armyObj[a.id];from[a.id]=o?o.shown:0;}
@@ -1873,7 +1873,7 @@ function statHTML(lbl,v,max){return`<div class="stat"><small>${lbl}</small><b>${
 function openCity(n){SEL=n;MAP.ring.visible=true;MAP.ring.position.copy(cityPos(n));MAP.ring.position.y+=.25;flyTo(n);renderSheet(n);$('#sheet').hidden=false;}
 function closeSheet(){SEL=null;MAP.ring.visible=false;MAP.tring.visible=false;$('#sheet').hidden=true;}
 function onCityTap(n){if(BUSY||!G.player)return;AU.init();openCity(n);}
-function onArmyTap(id){const a=G.armies.find(x=>x.id==id);if(!a)return;const g=OF(a.offs[0]);toast(`${FACTIONS[a.f].ruler}軍・${g.name}　兵 ${fmt(a.troops)}　${a.from} → ${a.to}`);}
+function onArmyTap(id){const a=G.armies.find(x=>x.id==id);if(!a)return;const g=a.offs.length?OF(a.offs[0]):null;toast(`${FACTIONS[a.f].ruler}軍${a.convoy?'輸送隊':''}・${g?g.name:'輜重隊'}　兵 ${fmt(a.troops)}　${a.from} → ${a.to}　剩 ${Math.max(1,Math.ceil((1-a.prog)*a.turns))} 月`);}
 function onEmptyTap(){if(!$('#sheet').hidden)closeSheet();}
 function renderSheet(n){const c=G.c[n],mine=c.f===G.player,cap=capOf(n);const offs=c.f?offsIn(n):[];const F=G.f[G.player];
   const incoming=G.armies.filter(a=>a.to===n&&a.f!==c.f);const idle=mine?idleOffs(n):[];const gold=F.gold;
@@ -1886,7 +1886,7 @@ function renderSheet(n){const c=G.c[n],mine=c.f===G.player,cap=capOf(n);const of
   <div class="sect">武將</div><div class="offs">${offs.length?offs.map(o=>`<span class="off ${o.done&&mine?'done':''}">${o.name}${o.sworn?'・義':''}${o.spouse?'・婚':''}</span>`).join(''):'<span class="off">無</span>'}</div>
   <div class="sect">${mine?'命令':'情報'}</div><div class="cmds">${mine?
     B('commerce','商業','金 300',noIdle||gold<300||c.commerce>=cap.commerce)+B('farm','農業','金 300',noIdle||gold<300||c.farm>=cap.farm)+B('recruit','徵兵','金 400',noIdle||gold<400)+B('wall','城防','金 300',noIdle||gold<300||c.def>=cap.def)+B('train','練兵','金 200',noIdle||gold<200||(c.train||0)>=100)
-    +B('search','搜索','尋訪人才',noIdle)+B('siege','兵器','金 '+siegeCost(n),noIdle||gold<siegeCost(n)||(c.siege||0)>=4)+B('march','出征',c.cool>G.turn?'整頓中':'攻打鄰城',noIdle||c.troops<1000||c.cool>G.turn,'primary')+B('move','輸送','調動兵將',!ADJ[n].some(m=>G.c[m].f===G.player))+B('visit','入城','3D 城內',false,'gold')
+    +B('search','搜索','尋訪人才',noIdle)+B('siege','兵器','金 '+siegeCost(n),noIdle||gold<siegeCost(n)||(c.siege||0)>=4)+B('march','出征',c.cool>G.turn?'整頓中':'攻打鄰城',noIdle||c.troops<1000||c.cool>G.turn,'primary')+B('move','輸送',c.cool>G.turn?'整頓中':'需行軍時間',!ADJ[n].some(m=>G.c[m].f===G.player)||c.cool>G.turn)+B('visit','入城','3D 城內',false,'gold')
     :B('visit','探查','3D 城內',false,'gold')+(c.f?B('diplo','外交','遣使 '+FACTIONS[c.f].ruler,false,'primary'):'')}</div>`;
   $('#sx').onclick=closeSheet;$('#sheet').querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>runCmd(b.dataset.cmd,n));}
 const c_f=n=>G.c[n].f;
@@ -1959,11 +1959,15 @@ async function offerJoint(a){const t=a.to;for(const k of allyHelpers(t)){const p
     if(!ok)continue;if(F.gold<300){toast('金錢不足');break;}F.gold-=300;
     if(R()<p){const b=allyDispatch(k,t,a.turns,G.player);if(b){G.rel[k]=Math.max(0,G.rel[k]-3);syncArmies();toast(`${FACTIONS[k].ruler}應允！${OF(b.offs[0]).name}率兵 ${fmt(b.troops)} 自${b.from}出發，與我軍合擊${t}`,4500);}else toast(`${FACTIONS[k].ruler}兵力不足，無法出兵`);}
     else toast(`${FACTIONS[k].ruler}推說兵馬未整，婉拒出兵`);}}
+const convoyTurns=(a,b)=>1+Math.floor(cityDist(a,b)/(isWater(a,b)?16:11));
 async function doMove(from){const c=G.c[from];const tg=ADJ[from].filter(m=>G.c[m].f===G.player);if(!tg.length)return toast('鄰近沒有我方城池');
-  const t=await choose('輸送目的地',`自${from}調動`,tg.map(m=>({id:m,label:m,meta:`兵 ${fmt(G.c[m].troops)}・武將 ${offsIn(m).length}`})));if(!t)return;
-  const offs=offsIn(from);let sel=[];if(offs.length){sel=await choose('調動武將','可不選',offs.map(offItem),{min:0,max:offs.length});if(sel===null)return;}
-  const n=c.troops>=500?await chooseNum('調動兵力',`${from}兵力 ${fmt(c.troops)}`,0,c.troops,500,0):0;if(n===null)return;
-  c.troops-=n;G.c[t].troops+=n;sel.map(OF).forEach(o=>{o.c=t;o.done=true;});toast(`自${from}向${t}輸送兵力 ${fmt(n)}${sel.length?'、武將 '+sel.map(i=>OF(i).name).join('、'):''}`);}
+  if(c.cool>G.turn)return toast(`${from}整頓中，${c.cool-G.turn} 個月後才能輸送`);
+  const t=await choose('輸送目的地',`自${from}調動・輸送隊需行軍，抵達後該城整頓 1 個月`,tg.map(m=>({id:m,label:m,meta:`兵 ${fmt(G.c[m].troops)}・武將 ${offsIn(m).length}・約 ${convoyTurns(from,m)} 個月抵達`})));if(!t)return;
+  const offs=offsIn(from).filter(o=>!o.done);let sel=[];if(offs.length){sel=await choose('隨隊武將','可不選（本月已行動的武將不能隨行）',offs.map(offItem),{min:0,max:offs.length});if(sel===null)return;}
+  const maxT=Math.floor(c.troops*.6/500)*500;const n=maxT>=500?await chooseNum('輸送兵力',`${from}兵力 ${fmt(c.troops)}，一次最多輸送六成`,0,maxT,500,0):0;if(n===null)return;
+  if(!n&&!sel.length)return toast('沒有輸送任何兵將');
+  const a=dispatch(G.player,from,t,sel.map(OF),n);a.convoy=true;a.turns=convoyTurns(from,t);syncArmies();
+  toast(`輸送隊自${from}出發：兵 ${fmt(n)}${sel.length?'、武將 '+sel.map(i=>OF(i).name).join('、'):''}，${a.turns} 個月後抵達${t}`);closeSheet();}
 
 // ================= 君主 =================
 async function menuLord(){if(BUSY)return;AU.init();const F=G.f[G.player],cs=citiesOf(G.player).length;
@@ -2101,7 +2105,9 @@ function showInfo(){const rows=Object.keys(FACTIONS).filter(k=>G.f[k].alive).map
 
 // ================= 戰鬥結算 =================
 async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
-  if(tc.f===a.f){tc.troops+=a.troops;offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);return;}
+  if(tc.f===a.f){const t0=tc.troops;tc.troops+=a.troops;if(tc.troops)tc.train=Math.round(((tc.train||0)*t0+(a.train||0)*a.troops)/tc.troops);offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);
+    if(a.convoy){tc.cool=Math.max(tc.cool||0,G.turn+2);if(a.f===G.player)toast(`輸送隊抵達${a.to}，兵 ${fmt(a.troops)}${offs.length?'、武將 '+offs.map(o=>o.name).join('、'):''}（整頓 1 個月）`);}return;}
+  if(a.convoy){if(a.f===G.player)toast(`${a.to}已失守，輸送隊折返`);retreat(a);return;}
   if(tc.f&&friendly(a.f,tc.f)){if(a.f===G.player)toast(`${a.to}已歸${FACTIONS[tc.f].ruler}，${OF(a.offs[0]).name}回師`);else if(tc.f===G.player)toast(`${FACTIONS[a.f].ruler}軍因盟約撤回`);retreat(a);return;}
   const sup=a.f===G.player?G.armies.filter(b=>b!==a&&b.support===G.player&&b.to===a.to&&b.prog>=1&&G.f[b.f].alive&&!friendly(b.f,tc.f)):[];
   const defF=tc.f,defOffs=defF?offsIn(a.to,defF):[];const pi=a.f===G.player||defF===G.player;
@@ -2110,40 +2116,56 @@ async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
     if(src){const aid=Math.min(6000,Math.round(src.troops*.3));if(aid>=500){src.troops-=aid;tc.troops+=aid;toast(`盟友${FACTIONS[k].ruler}自${src.name}派兵 ${fmt(aid)} 馳援${a.to}！`,4500);}}}}
   const supT=sup.reduce((s,b)=>s+b.troops,0),own0=a.troops;a.troops+=supT;
   const allyTxt=sup.length?`盟友${[...new Set(sup.map(b=>FACTIONS[b.f].ruler))].join('、')}軍 ${fmt(supT)} 前來合擊！`:null;
-  const gA=bestGen(offs),gD=bestGen(defOffs);let duel=null;
-  if(gA&&gD&&!a.water&&gA.war>=70&&gD.war>=70&&R()<.6){
-    if(pi&&G.set.watch){const mine=a.f===G.player?'A':'B';const myG=mine==='A'?gA:gD,foe=mine==='A'?gD:gA;
-      const ok=await dlg('陣前單挑',`<p>${a.to}城下，${esc(foe.name)}（武力 ${foe.war}）縱馬出陣，向我軍叫戰！</p><p>我方大將 ${esc(myG.name)}（武力 ${myG.war}）是否應戰？</p>`,[{label:'避戰',value:false},{label:'應戰！',value:true,cls:'primary'}]);
-      if(ok){let r;try{r=await duelScene({A:gA,B:gD,fA:a.f,fB:defF,me:mine,title:`${a.to}・陣前單挑`});}catch(e){console.error(e);endSafe();r={winner:R()<clamp(.5+(gA.war-gD.war)/36,.1,.9)?'A':'B',ko:true};}
-        duel={win:r.winner==='A'?'att':'def',ko:r.ko,shown:true};}
-      else duel={win:mine==='A'?'def':'att',shown:true,refused:true};}
-    else{const p=clamp(.5+(gA.war-gD.war)/36,.1,.9);duel={win:R()<p?'att':'def',ko:R()<.5};}}
-  let qa=armyQuality([gA,...offs.filter(o=>o!==gA)]),qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)]);if(duel){const m=duel.refused?[.06,.02]:duel.ko?[.18,.1]:[.12,.06];if(duel.win==='att'){qa+=m[0];qd-=m[1];}else{qd+=m[0];qa-=m[1];}}
-  if(a.horse)qa*=1.05;const naval=!!a.water;let res,fire=null;
-  if(naval){if(duel)duel=null;qa=armyQuality([gA,...offs.filter(o=>o!==gA)])*navalSkill(a.f)*(a.port?1.1:1);qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)])*navalSkill(defF)*(specOf(a.to)==='港'?1.1:1);
+  const gA=bestGen(offs),gD=bestGen(defOffs);let duel=null,watch=false;const naval=!!a.water,canDuel=!!(gA&&gD&&!naval);
+  const intro=`<p>${FACTIONS[a.f].ruler}軍 ${esc(gA?gA.name:'')} 率${naval?'水軍':'兵'} ${fmt(a.troops)} ${naval?'駛抵'+a.to+'江面，守軍戰船出港迎擊！':'抵達'+a.to+'城下！'}守將 ${esc(gD?gD.name:'守城士卒')}，守軍 ${fmt(tc.troops)}。${!naval&&a.siege?`攻方攜帶攻城兵器 ${a.siege} 座。`:''}${allyTxt?esc(allyTxt):''}</p>`;
+  if(pi&&G.set.watch){const mine=a.f===G.player?'A':'B';const myG=mine==='A'?gA:gD,foe=mine==='A'?gD:gA;const mySide=mine==='A'?'att':'def',foeSide=mine==='A'?'def':'att';
+    const runDuel=async()=>{let r;try{r=await duelScene({A:gA,B:gD,fA:a.f,fB:defF,me:mine,title:`${a.to}・陣前單挑`});}catch(e){console.error(e);endSafe();r={winner:R()<duelP(gA,gD)?'A':'B',ko:true};}return{win:r.winner==='A'?'att':'def',ko:r.ko,shown:true,decisive:true};};
+    if(canDuel&&gA.war>=70&&gD.war>=70&&R()<.45){
+      const ok=await dlg('陣前單挑',`<p>${a.to}城下，${esc(foe.name)}（武力 ${foe.war}）縱馬出陣，向我軍叫戰！</p><p>我方大將 ${esc(myG.name)}（武力 ${myG.war}）是否應戰？<b>單挑勝者直接決定這一戰的勝負，敗將被俘。</b></p>`,[{label:'避戰',value:false},{label:'應戰！',value:true,cls:'primary'}]);
+      duel=ok?await runDuel():{win:foeSide,shown:true,refused:true};}
+    if(!duel||duel.refused){const btns=[{label:'直接結算',value:'auto'},{label:naval?'觀看 3D 水戰':'觀看 3D 戰鬥',value:'watch',cls:canDuel&&!duel?'':'primary'}];if(canDuel&&!duel)btns.push({label:'發起單挑',value:'duel',cls:'primary'});
+      const v=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),intro+(canDuel&&!duel?`<p class="sub">可派 ${esc(myG.name)}（武力 ${myG.war}）向 ${esc(foe.name)}（武力 ${foe.war}）叫陣：贏了直接獲勝並俘虜敵將，輸了全軍潰敗、主將被俘。</p>`:naval?'<p class="sub">水戰無法單挑。</p>':''),btns);
+      if(v==='duel'){if(foe.war<myG.war-10&&R()<.55){duel={win:mySide,shown:true,refused:true};watch=true;await dlg('敵將避戰',`<p>${esc(foe.name)}自知不敵，龜縮陣中不敢出戰！我軍士氣大振。</p>`,[{label:'全軍進攻！',value:0,cls:'primary'}]);}else duel=await runDuel();}
+      else watch=v==='watch';}}
+  else if(canDuel&&gA.war>=70&&gD.war>=70&&R()<(pi?.45:.3))duel={win:R()<duelP(gA,gD)?'att':'def',ko:R()<.5,decisive:true};
+  const splitSup=()=>{if(!sup.length)return;const k=a.troops/Math.max(1,own0+supT);let used=0;sup.forEach(b=>{b.troops=Math.round(b.troops*k);used+=b.troops;retreat(b);});a.troops=Math.max(0,a.troops-used);};
+  if(duel&&duel.decisive){const W=duel.win,wg=W==='att'?gA:gD,lg=W==='att'?gD:gA;const txt=`${wg.name}陣前${duel.ko?'斬落':'擊敗'}${lg.name}`;logMsg(`${a.to}陣前單挑：${txt}，${W==='att'?'攻方':'守方'}大勝`);
+    if(W==='att'){const dl=Math.round(tc.troops*.35),al=Math.round(a.troops*.03);a.troops-=al;splitSup();tc.troops=Math.round(Math.max(0,tc.troops-dl)*.5);tc.def=Math.round(tc.def*.85);
+      await captureCity(a,defF,defOffs,offs,{res:{defLoss:dl,attLoss:al},duelTxt:`${txt}，守軍軍心大亂，開城投降！`},lg);}
+    else{const al=Math.round(a.troops*.35);a.troops=Math.max(0,a.troops-al);splitSup();await captureGeneral(lg,defF,a.to,a);retreat(a);
+      if(pi)await dlg(a.f===G.player?'單挑落敗':'守城成功',`<p>${esc(txt)}！${a.f===G.player?`我軍見主將被擒，全軍潰退，折損 ${fmt(al)}。`:`${FACTIONS[a.f].ruler}軍群龍無首，四散潰逃，折損 ${fmt(al)}。`}</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);
+      else logMsg(`${FACTIONS[a.f].ruler}軍攻打${a.to}失利`);}
+    return;}
+  let qa=armyQuality([gA,...offs.filter(o=>o!==gA)]),qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)]);if(duel){if(duel.win==='att'){qa+=.06;qd-=.02;}else{qd+=.06;qa-=.02;}}
+  if(a.horse)qa*=1.05;let res,fire=null;
+  if(naval){qa=armyQuality([gA,...offs.filter(o=>o!==gA)])*navalSkill(a.f)*(a.port?1.1:1);qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)])*navalSkill(defF)*(specOf(a.to)==='港'?1.1:1);
     qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*.25);const wg=res.winner==='att'?gA:gD;if(wg&&wg.int>=82&&R()<.6){fire=res.winner;if(fire==='att')res.defLoss=Math.min(tc.troops,Math.round(res.defLoss*1.15));else res.attLoss=Math.min(a.troops,Math.round(res.attLoss*1.15));}}
   else{const sg=Math.min(4,a.siege||0);qa+=.04*sg;qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*(1-.2*sg));}
-  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=(duel&&duel.shown?(duel.refused?`${dW.name}耀武揚威，${dL.name}避戰不出`:`${dW.name}陣前${duel.ko?'斬將':'得勝'}，士氣大振！`):null)||allyTxt;
-  const info={att:{f:a.f,gen:gA,troops:a.troops,siege:naval?0:(a.siege||0)},def:{f:defF,gen:gD,troops:tc.troops,city:a.to},res,duel:duel&&duel.shown?null:duel,duelBanner,fire,naval,playerSide:a.f===G.player?'att':defF===G.player?'def':null};
-  if(pi){let w=G.set.watch;if(w){w=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),`<p>${FACTIONS[a.f].ruler}軍 ${esc(gA?gA.name:'')} 率${naval?'水軍':'兵'} ${fmt(a.troops)} ${naval?'駛抵'+a.to+'江面，守軍戰船出港迎擊！':'抵達'+a.to+'城下！'}守將 ${esc(gD?gD.name:'守城士卒')}，守軍 ${fmt(tc.troops)}。${!naval&&a.siege?`攻方攜帶攻城兵器 ${a.siege} 座。`:''}${allyTxt?esc(allyTxt):''}</p>`,[{label:'直接結算',value:false},{label:naval?'觀看 3D 水戰':'觀看 3D 戰鬥',value:true,cls:'primary'}]);}
-    if(w){try{await (naval?navalScene(info):battleScene(info));}catch(e){console.error(e);endSafe();}}}
+  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=(duel?`${dW.name}耀武揚威，${dL.name}避戰不出`:null)||allyTxt;
+  const info={att:{f:a.f,gen:gA,troops:a.troops,siege:naval?0:(a.siege||0)},def:{f:defF,gen:gD,troops:tc.troops,city:a.to},res,duel:null,duelBanner,fire,naval,playerSide:a.f===G.player?'att':defF===G.player?'def':null};
+  if(pi&&watch){try{await (naval?navalScene(info):battleScene(info));}catch(e){console.error(e);endSafe();}}
   if(naval&&fire)logMsg(`${a.to}水戰：${(fire==='att'?gA:gD).name}施展火攻`);
   a.troops=Math.max(0,a.troops-res.attLoss);tc.troops=Math.max(0,tc.troops-res.defLoss);
-  if(sup.length){const k=a.troops/Math.max(1,own0+supT);let used=0;sup.forEach(b=>{b.troops=Math.round(b.troops*k);used+=b.troops;retreat(b);});a.troops=Math.max(0,a.troops-used);if(G.set.watch)logMsg(`${a.to}之戰：${allyTxt}`);}
-  if(duel)logMsg(`${a.to}陣前單挑：${(duel.win==='att'?gA:gD).name}擊敗${(duel.win==='att'?gD:gA).name}`);
+  if(sup.length){splitSup();logMsg(`${a.to}之戰：${allyTxt}`);}
   if(res.winner==='att'){tc.def=Math.round(tc.def*.7);await captureCity(a,defF,defOffs,offs,info);}
   else{tc.def=Math.max(100,Math.round(tc.def*.93));retreat(a);if(pi)await dlg(a.f===G.player?'攻城失利':'守城成功',`<p>${a.f===G.player?`我軍攻打${a.to}失利，損兵 ${fmt(res.attLoss)}，殘部撤回。`:`${a.to}守軍擊退${FACTIONS[a.f].ruler}軍！敵軍折損 ${fmt(res.attLoss)}，我軍損失 ${fmt(res.defLoss)}。`}</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);else logMsg(`${FACTIONS[a.f].ruler}軍攻打${a.to}失利`);}}
+const duelP=(A,B)=>clamp(.5+(A.war-B.war)/36,.1,.9);
+async function captureGeneral(o,byF,city,a){a.offs=a.offs.filter(id=>id!==o.id);o.army=null;const oldF=o.f;const ruler=!!(oldF&&FACTIONS[oldF]&&o.name===FACTIONS[oldF].ruler);
+  if(byF===G.player){const p=(ruler?.03:(o.loy<80?.5:.28))*Math.max(.4,1-G.turn/72);const ok=R()<p;if(G.set.anim){try{await surrenderScene(o,ok,'captive');}catch(e){console.error(e);endSafe();}}
+    if(ok){o.f=G.player;o.loy=66;o.c=city;o.done=true;toast(`${o.name}歸降我軍`);}else{releaseOfficer(o,oldF,city);toast(`${o.name}寧死不降，只得放回`);}}
+  else if(byF&&!ruler&&R()<.3){o.f=byF;o.loy=60;o.c=city;if(oldF===G.player)toast(`${o.name}被俘後投降了${FACTIONS[byF].ruler}`,4500);}
+  else{releaseOfficer(o,oldF,city);if(oldF===G.player)toast(`${o.name}被俘後獲釋，返回${o.c||'民間'}`);}}
 function endSafe(){if(SCENE_ACTIVE){HUD.hidden=true;SCENE_ACTIVE=false;setView(MAP.view);$('#ui').hidden=false;}}
 function retreat(a){const offs=a.offs.map(OF);const back=G.c[a.from].f===a.f?a.from:nearestOwn(a.f,a.to);removeArmy(a);
   if(back){G.c[back].troops+=a.troops;offs.forEach(o=>{o.c=back;o.army=null;});}else offs.forEach(freeOfficer);}
-async function captureCity(a,defF,defOffs,offs,info){const tc=G.c[a.to];tc.train=Math.round(a.train||0);tc.siege=(a.siege||0);tc.cool=G.turn+2;if(a.f===G.player&&defF)G.rel[defF]=Math.max(0,G.rel[defF]-25);tc.f=a.f;tc.troops+=a.troops;offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);
-  const captured=[];for(const o of defOffs){const ruler=defF&&o.name===FACTIONS[defF].ruler;const flee=nearestOwn(defF,a.to);if(flee&&(ruler||R()<.35)){o.c=flee;continue;}captured.push(o);}
-  if(a.f===G.player){await dlg('攻城成功',`<p>我軍攻克${a.to}！${info?`敵軍折損 ${fmt(info.res.defLoss)}，我軍損失 ${fmt(info.res.attLoss)}。`:''}${captured.length?`俘虜：${captured.map(o=>o.name).join('、')}。`:''}</p>`,[{label:captured.length?'審問俘虜':'返回地圖',value:0,cls:'primary'}]);
+async function captureCity(a,defF,defOffs,offs,info,forceCap){const tc=G.c[a.to];tc.train=Math.round(a.train||0);tc.siege=(a.siege||0);tc.cool=G.turn+2;if(a.f===G.player&&defF)G.rel[defF]=Math.max(0,G.rel[defF]-25);tc.f=a.f;tc.troops+=a.troops;offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);
+  const captured=[];for(const o of defOffs){const ruler=defF&&o.name===FACTIONS[defF].ruler;const flee=nearestOwn(defF,a.to);if(o!==forceCap&&flee&&(ruler||R()<.35)){o.c=flee;continue;}captured.push(o);}
+  if(a.f===G.player){await dlg('攻城成功',`<p>${info&&info.duelTxt?esc(info.duelTxt):''}我軍攻克${a.to}！${info?`敵軍折損 ${fmt(info.res.defLoss)}，我軍損失 ${fmt(info.res.attLoss)}。`:''}${captured.length?`俘虜：${captured.map(o=>o.name).join('、')}。`:''}</p>`,[{label:captured.length?'審問俘虜':'返回地圖',value:0,cls:'primary'}]);
     let shown=0;for(const o of captured){const ruler=defF&&o.name===FACTIONS[defF].ruler;const p=(ruler?.03:(o.loy<80?.55:.3)+((G.o.find(x=>x.name===FACTIONS[G.player].ruler)||{cha:0}).cha/1000))*Math.max(.4,1-G.turn/72);const ok=R()<p;
       if(G.set.anim&&shown<3){shown++;await surrenderScene(o,ok,'captive');}
       if(ok){o.f=G.player;o.loy=68;o.done=true;toast(`${o.name}歸降我軍`);}else releaseOfficer(o,defF,a.to);}}
   else{for(const o of captured){const ruler=defF&&o.name===FACTIONS[defF].ruler;if(!ruler&&R()<.3){o.f=a.f;o.loy=60;}else releaseOfficer(o,defF,a.to);}
-    if(defF===G.player)await dlg(`${a.to}失陷`,`<p>${FACTIONS[a.f].ruler}軍攻陷${a.to}！${captured.length?captured.map(o=>o.name).join('、')+'被俘或下落不明。':''}</p>`,[{label:'可恨！',value:0,cls:'primary'}]);
+    if(defF===G.player)await dlg(`${a.to}失陷`,`<p>${info&&info.duelTxt?esc(info.duelTxt):''}${FACTIONS[a.f].ruler}軍攻陷${a.to}！${captured.length?captured.map(o=>o.name).join('、')+'被俘或下落不明。':''}</p>`,[{label:'可恨！',value:0,cls:'primary'}]);
     else logMsg(`${FACTIONS[a.f].ruler}軍攻陷${a.to}`);}
   if(defF&&!citiesOf(defF).length)eliminate(defF,a.f);}
 function releaseOfficer(o,f,from){const flee=f?nearestOwn(f,from):null;if(flee&&o.f===f){o.c=flee;}else freeOfficer(o);}
@@ -2157,16 +2179,16 @@ function aiTurn(f){const F=G.f[f],cs=citiesOf(f),warn=[];if(!cs.length)return wa
   const border=c=>ADJ[c.name].some(n=>G.c[n].f!==f);
   for(const c of shuffle(cs.slice())){const cap=capOf(c.name),bd=border(c),want=bd?9000+CITY_BY[c.name].size*5000:4000+CITY_BY[c.name].size*1500;
     for(const o of idleOffs(c.name).slice(0,3)){if(F.gold<300)break;
-      if(c.troops<want&&F.gold>=400&&c.pop>50000){const amt=Math.round((1000+o.cha*15)*1.35);c.troops+=amt;c.pop-=amt;F.gold-=400;c.train=Math.round((c.train||0)*(c.troops-amt)/c.troops);}
+      if(c.troops<want&&F.gold>=400&&c.pop>50000){const amt=Math.round((1000+o.cha*15)*1.45);c.troops+=amt;c.pop-=amt;F.gold-=400;c.train=Math.round((c.train||0)*(c.troops-amt)/c.troops);}
       else if(bd&&(c.train||0)<75&&F.gold>=200&&R()<.5){c.train=Math.min(100,(c.train||0)+10+Math.floor(o.lead/8));F.gold-=200;}
       else{const ks=['commerce','farm','def'].filter(k=>c[k]<cap[k]);if(!ks.length)continue;const k=ks.sort((a,b)=>c[a]/cap[a]-c[b]/cap[b])[0];c[k]=Math.min(cap[k],c[k]+15+Math.floor(o[k==='def'?'lead':'pol']/4));F.gold-=300;}o.done=true;}
     if(bd&&(c.siege||0)<3&&F.gold>2000&&R()<.35){c.siege=(c.siege||0)+1;F.gold-=siegeCost(c.name);}
     if(!bd&&c.troops>want+2000){const to=ADJ[c.name].map(n=>G.c[n]).filter(x=>x.f===f&&border(x)).sort((a,b)=>a.troops-b.troops)[0]||ADJ[c.name].map(n=>G.c[n]).filter(x=>x.f===f).sort((a,b)=>a.troops-b.troops)[0];if(to){const n=c.troops-want;c.troops-=n;to.troops+=n;}}}
   const coal=inCoal(f);const atk=(cs.length>=4?2:1)+(coal?1:0);let made=0;
-  for(let k=0;k<atk;k++){if(G.turn<2||R()>(coal?.9:.72))continue;let best=null;
+  for(let k=0;k<atk;k++){if(G.turn<2||R()>(coal?.92:.78))continue;let best=null;
     for(const c of cs){const all=offsIn(c.name);if(!all.length||c.troops<4500||c.cool>G.turn)continue;const g=bestGen(all);
       for(const n of ADJ[c.name]){const e=G.c[n];if(e.f===f||G.armies.some(x=>x.f===f&&x.to===n))continue;if(e.f&&e.f!==G.player&&friendly(f,e.f))continue;if(e.f===G.player&&(G.turn<4||treaty(f)||(G.rel[f]>=80&&!coal)))continue;
-        const eq=armyQuality([bestGen(e.f?offsIn(n):[])]);const sgc=isWater(c.name,n)?0:Math.min(4,c.siege||0);const r=trainMul(c.train)/trainMul(e.train)*c.troops*.7*(armyQuality([g])+.04*sgc)*(isWater(c.name,n)?navalSkill(f)/navalSkill(e.f):1)/((e.troops+300)*eq*(1+e.def*(1-.2*sgc)/1500));const th=e.f===G.player?(coal?1.0:G.turn>=12?1.1:1.2):1.25;if(r>th){const s=r+(e.f?0:1.5)+(e.f===G.player&&G.rel[f]<30?.3:0)+(e.f===G.player&&coal?1.2:0)+R()*.4;if(!best||s>best.s)best={s,c,n,all,g};}}}
+        const eq=armyQuality([bestGen(e.f?offsIn(n):[])]);const sgc=isWater(c.name,n)?0:Math.min(4,c.siege||0);const r=trainMul(c.train)/trainMul(e.train)*c.troops*.7*(armyQuality([g])+.04*sgc)*(isWater(c.name,n)?navalSkill(f)/navalSkill(e.f):1)/((e.troops+300)*eq*(1+e.def*(1-.2*sgc)/1500));const th=e.f===G.player?(coal?.95:G.turn>=12?1.05:1.15):1.25;if(r>th){const s=r+(e.f?0:1.5)+(e.f===G.player&&G.rel[f]<30?.3:0)+(e.f===G.player&&coal?1.2:0)+R()*.4;if(!best||s>best.s)best={s,c,n,all,g};}}}
     if(best){const dep=best.all.filter(o=>o!==best.g).sort((a,b)=>b.war-a.war).slice(0,1);const keep=best.all.length>1?[best.g,...dep].slice(0,best.all.length-1):[best.g];
       const a=dispatch(f,best.c.name,best.n,keep,Math.round(best.c.troops*.7),isWater(best.c.name,best.n)?0:(best.c.siege||0));made++;if(G.c[best.n].f===G.player){warn.push(a);G.rel[f]=Math.max(0,G.rel[f]-10);}else logMsg(`${FACTIONS[f].ruler}軍出兵${best.n}`);}}
   return warn;}
@@ -2189,7 +2211,7 @@ function coalitionMonthly(){const pl=G.player,C=G.coal;
   if(G.turn<8||(G.coalCD||0)>G.turn)return null;
   const alive=Object.keys(FACTIONS).filter(k=>k!==pl&&G.f[k].alive);if(alive.length<2)return null;
   const pp=power(pl),pc=citiesOf(pl).length,top=Math.max(...alive.map(power));
-  if(!(pc>=5||pp>top*1.35||(pc>=4&&pp>top)))return null;if(R()>.35)return null;
+  if(!(pc>=5||pp>top*1.25||(pc>=4&&pp>top*.9)))return null;if(R()>.4)return null;
   const bd=borderFactions(pl);const cand=alive.filter(f=>!treaty(f)&&G.rel[f]<65).sort((a,b)=>(bd.includes(b)-bd.includes(a))||(G.rel[a]-G.rel[b]));
   if(!cand.some(f=>bd.includes(f)))return null;
   const members=cand.slice(0,Math.min(6,2+Math.floor(pc/3)));if(members.length<2)return null;
@@ -2216,7 +2238,7 @@ function economy(){for(const c of Object.values(G.c))if(c.train)c.train=Math.max
   for(const f in G.f){if(!G.f[f].alive)continue;const F=G.f[f],cs=citiesOf(f);let g=0,fd=0,up=0;
   for(const c of cs){const i=cityIncome(c);g+=i.g;fd+=i.fd;up+=c.troops/25;c.pop=Math.round(c.pop*(1.002+c.farm/500000));}
   up+=G.armies.filter(a=>a.f===f).reduce((s,a)=>s+a.troops/25,0);if(f===G.player)G.lastInc={g:Math.round(g),fd:Math.round(fd),up:Math.round(up)};
-  if(f!==G.player){g*=1.4;fd*=1.4;}F.gold+=Math.round(g);F.food+=Math.round(fd-up);if(F.food<0){F.food=0;cs.forEach(c=>c.troops=Math.round(c.troops*.92));if(f===G.player)toast('糧草斷絕，士兵紛紛逃亡！');}}}
+  if(f!==G.player){g*=1.5;fd*=1.5;}F.gold+=Math.round(g);F.food+=Math.round(fd-up);if(F.food<0){F.food=0;cs.forEach(c=>c.troops=Math.round(c.troops*.92));if(f===G.player)toast('糧草斷絕，士兵紛紛逃亡！');}}}
 function enemyReport(list){list=[].concat(list);const a=list[0],g=OF(a.offs[0]),F=FACTIONS[a.f],c=G.c[a.to],P=G.f[G.player];const multi=list.length>1;const tot=list.reduce((s,x)=>s+x.troops,0);
   return{kicker:multi?'聯軍合擊':'急報',stamp:multi?'盟':'急',title:multi?`${list.length} 路聯軍合擊${a.to}`:`${F.ruler}軍來犯`,text:multi?`${list.map(x=>`${FACTIONS[x.f].ruler}麾下${OF(x.offs[0]).name}率兵 ${fmt(x.troops)} 自${x.from}`).join('；')}，同時殺奔我${a.to}！合計 ${fmt(tot)} 大軍，預計${a.turns>1?a.turns+'個月後':'下月'}兵臨城下。${a.to}守軍 ${fmt(c.troops)}，城防 ${c.def}。`
       :`${F.ruler}麾下${g.name}率兵 ${fmt(a.troops)}，自${a.from}出發，直撲我${a.to}！預計${a.turns>1?a.turns+'個月後':'下月'}兵臨城下。${a.to}守軍 ${fmt(c.troops)}，城防 ${c.def}。`,
@@ -2236,7 +2258,7 @@ function rollEvent(){if(R()>.3)return null;const cs=citiesOf(G.player);if(!cs.le
 async function endTurn(){if(BUSY||!G.player)return;AU.init();BUSY=true;closeSheet();refreshUI();
   try{
     G.armies.forEach(a=>a.prog=Math.min(1,a.prog+1/a.turns));syncArmies();await animateArmies(1400);
-    const arr=G.armies.filter(a=>a.prog>=1);const pri=a=>(a.f===G.player?3:G.c[a.to].f===G.player?2:0)-(a.support?1:0);arr.sort((a,b)=>pri(b)-pri(a));
+    const arr=G.armies.filter(a=>a.prog>=1);const pri=a=>(a.convoy?-5:0)+(a.f===G.player?3:G.c[a.to].f===G.player?2:0)-(a.support?1:0);arr.sort((a,b)=>pri(b)-pri(a));
     for(const a of arr){if(!G.armies.includes(a))continue;if(!G.f[a.f].alive){removeArmy(a);continue;}await resolveArrival(a);refreshMap();refreshUI();if(G.over)break;}
     if(!G.over){const co=coalitionMonthly();const warn=[];for(const f of shuffle(Object.keys(FACTIONS))){if(f===G.player||!G.f[f].alive)continue;warn.push(...aiTurn(f));}warn.push(...coalitionJoin(warn));if(warn.length)syncArmies();
       G.month++;if(G.month>12){G.month=1;G.year++;}G.turn++;economy();diploMonthly();if(G.lastInc){const L=G.lastInc;toast(`${G.month}月收支：金 +${fmt(L.g)}，糧 +${fmt(L.fd)}，軍糧 −${fmt(L.up)}`,4200);}G.o.forEach(o=>o.done=false);refreshMap();refreshUI();
