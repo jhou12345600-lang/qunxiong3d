@@ -2104,44 +2104,45 @@ function showInfo(){const rows=Object.keys(FACTIONS).filter(k=>G.f[k].alive).map
     <div class="sect">近事</div><div style="font-size:12.5px;color:var(--muted);line-height:1.7;max-height:30vh;overflow:auto">${G.log.slice(0,25).map(esc).join('<br>')||'—'}</div>`,[{label:'關閉',value:0}]);}
 
 // ================= 戰鬥結算 =================
-async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
+async function resolveArrival(a){const tc=G.c[a.to];let offs=a.offs.map(OF);
   if(tc.f===a.f){const t0=tc.troops;tc.troops+=a.troops;if(tc.troops)tc.train=Math.round(((tc.train||0)*t0+(a.train||0)*a.troops)/tc.troops);offs.forEach(o=>{o.c=a.to;o.army=null;});removeArmy(a);
     if(a.convoy){tc.cool=Math.max(tc.cool||0,G.turn+2);if(a.f===G.player)toast(`輸送隊抵達${a.to}，兵 ${fmt(a.troops)}${offs.length?'、武將 '+offs.map(o=>o.name).join('、'):''}（整頓 1 個月）`);}return;}
   if(a.convoy){if(a.f===G.player)toast(`${a.to}已失守，輸送隊折返`);retreat(a);return;}
   if(tc.f&&friendly(a.f,tc.f)){if(a.f===G.player)toast(`${a.to}已歸${FACTIONS[tc.f].ruler}，${OF(a.offs[0]).name}回師`);else if(tc.f===G.player)toast(`${FACTIONS[a.f].ruler}軍因盟約撤回`);retreat(a);return;}
   const sup=a.f===G.player?G.armies.filter(b=>b!==a&&b.support===G.player&&b.to===a.to&&b.prog>=1&&G.f[b.f].alive&&!friendly(b.f,tc.f)):[];
-  const defF=tc.f,defOffs=defF?offsIn(a.to,defF):[];const pi=a.f===G.player||defF===G.player;
+  const defF=tc.f;let defOffs=defF?offsIn(a.to,defF):[];const pi=a.f===G.player||defF===G.player;
   if(tc.troops<300&&!defOffs.length){sup.forEach(retreat);tc.troops=0;if(pi)toast(`${OF(a.offs[0]).name}兵不血刃，佔領${a.to}`);await captureCity(a,defF,defOffs,offs,null);return;}
   if(defF===G.player){for(const k of Object.keys(FACTIONS)){const t=treaty(k);if(!t||t.type!=='ally'||k===a.f||!G.f[k].alive)continue;const src=ADJ[a.to].map(n=>G.c[n]).filter(c=>c.f===k).sort((x,y)=>y.troops-x.troops)[0];
     if(src){const aid=Math.min(6000,Math.round(src.troops*.3));if(aid>=500){src.troops-=aid;tc.troops+=aid;toast(`盟友${FACTIONS[k].ruler}自${src.name}派兵 ${fmt(aid)} 馳援${a.to}！`,4500);}}}}
   const supT=sup.reduce((s,b)=>s+b.troops,0),own0=a.troops;a.troops+=supT;
   const allyTxt=sup.length?`盟友${[...new Set(sup.map(b=>FACTIONS[b.f].ruler))].join('、')}軍 ${fmt(supT)} 前來合擊！`:null;
-  const gA=bestGen(offs),gD=bestGen(defOffs);let duel=null,watch=false;const naval=!!a.water,canDuel=!!(gA&&gD&&!naval);
+  let gA=bestGen(offs),gD=bestGen(defOffs);let duel=null,watch=false;const naval=!!a.water,canDuel=!!(gA&&gD&&!naval);
   const intro=`<p>${FACTIONS[a.f].ruler}軍 ${esc(gA?gA.name:'')} 率${naval?'水軍':'兵'} ${fmt(a.troops)} ${naval?'駛抵'+a.to+'江面，守軍戰船出港迎擊！':'抵達'+a.to+'城下！'}守將 ${esc(gD?gD.name:'守城士卒')}，守軍 ${fmt(tc.troops)}。${!naval&&a.siege?`攻方攜帶攻城兵器 ${a.siege} 座。`:''}${allyTxt?esc(allyTxt):''}</p>`;
   if(pi&&G.set.watch){const mine=a.f===G.player?'A':'B';const myG=mine==='A'?gA:gD,foe=mine==='A'?gD:gA;const mySide=mine==='A'?'att':'def',foeSide=mine==='A'?'def':'att';
     const runDuel=async()=>{let r;try{r=await duelScene({A:gA,B:gD,fA:a.f,fB:defF,me:mine,title:`${a.to}・陣前單挑`});}catch(e){console.error(e);endSafe();r={winner:R()<duelP(gA,gD)?'A':'B',ko:true};}return{win:r.winner==='A'?'att':'def',ko:r.ko,shown:true,decisive:true};};
     if(canDuel&&gA.war>=70&&gD.war>=70&&R()<.45){
-      const ok=await dlg('陣前單挑',`<p>${a.to}城下，${esc(foe.name)}（武力 ${foe.war}）縱馬出陣，向我軍叫戰！</p><p>我方大將 ${esc(myG.name)}（武力 ${myG.war}）是否應戰？<b>單挑勝者直接決定這一戰的勝負，敗將被俘。</b></p>`,[{label:'避戰',value:false},{label:'應戰！',value:true,cls:'primary'}]);
+      const ok=await dlg('陣前單挑',`<p>${a.to}城下，${esc(foe.name)}（武力 ${foe.war}）縱馬出陣，向我軍叫戰！</p><p>我方大將 ${esc(myG.name)}（武力 ${myG.war}）是否應戰？<b>勝方士氣大振、敗方軍心動搖；若將對手擊落馬下，可當場生擒。</b></p>`,[{label:'避戰',value:false},{label:'應戰！',value:true,cls:'primary'}]);
       duel=ok?await runDuel():{win:foeSide,shown:true,refused:true};}
     if(!duel||duel.refused){const btns=[{label:'直接結算',value:'auto'},{label:naval?'觀看 3D 水戰':'觀看 3D 戰鬥',value:'watch',cls:canDuel&&!duel?'':'primary'}];if(canDuel&&!duel)btns.push({label:'發起單挑',value:'duel',cls:'primary'});
-      const v=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),intro+(canDuel&&!duel?`<p class="sub">可派 ${esc(myG.name)}（武力 ${myG.war}）向 ${esc(foe.name)}（武力 ${foe.war}）叫陣：贏了直接獲勝並俘虜敵將，輸了全軍潰敗、主將被俘。</p>`:naval?'<p class="sub">水戰無法單挑。</p>':''),btns);
+      const v=await dlg(naval?'江上遭遇':(a.f===G.player?'兵臨城下':'敵軍攻城'),intro+(canDuel&&!duel?`<p class="sub">可派 ${esc(myG.name)}（武力 ${myG.war}）向 ${esc(foe.name)}（武力 ${foe.war}）叫陣：勝方士氣大振、敗方士卒逃散，擊落馬下可生擒敵將；之後大軍仍須攻城。</p>`:naval?'<p class="sub">水戰無法單挑。</p>':''),btns);
       if(v==='duel'){if(foe.war<myG.war-10&&R()<.55){duel={win:mySide,shown:true,refused:true};watch=true;await dlg('敵將避戰',`<p>${esc(foe.name)}自知不敵，龜縮陣中不敢出戰！我軍士氣大振。</p>`,[{label:'全軍進攻！',value:0,cls:'primary'}]);}else duel=await runDuel();}
       else watch=v==='watch';}}
   else if(canDuel&&gA.war>=70&&gD.war>=70&&R()<(pi?.45:.3))duel={win:R()<duelP(gA,gD)?'att':'def',ko:R()<.5,decisive:true};
   const splitSup=()=>{if(!sup.length)return;const k=a.troops/Math.max(1,own0+supT);let used=0;sup.forEach(b=>{b.troops=Math.round(b.troops*k);used+=b.troops;retreat(b);});a.troops=Math.max(0,a.troops-used);};
-  if(duel&&duel.decisive){const W=duel.win,wg=W==='att'?gA:gD,lg=W==='att'?gD:gA;const txt=`${wg.name}陣前${duel.ko?'斬落':'擊敗'}${lg.name}`;logMsg(`${a.to}陣前單挑：${txt}，${W==='att'?'攻方':'守方'}大勝`);
-    if(W==='att'){const dl=Math.round(tc.troops*.35),al=Math.round(a.troops*.03);a.troops-=al;splitSup();tc.troops=Math.round(Math.max(0,tc.troops-dl)*.5);tc.def=Math.round(tc.def*.85);
-      await captureCity(a,defF,defOffs,offs,{res:{defLoss:dl,attLoss:al},duelTxt:`${txt}，守軍軍心大亂，開城投降！`},lg);}
-    else{const al=Math.round(a.troops*.35);a.troops=Math.max(0,a.troops-al);splitSup();await captureGeneral(lg,defF,a.to,a);retreat(a);
-      if(pi)await dlg(a.f===G.player?'單挑落敗':'守城成功',`<p>${esc(txt)}！${a.f===G.player?`我軍見主將被擒，全軍潰退，折損 ${fmt(al)}。`:`${FACTIONS[a.f].ruler}軍群龍無首，四散潰逃，折損 ${fmt(al)}。`}</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);
-      else logMsg(`${FACTIONS[a.f].ruler}軍攻打${a.to}失利`);}
-    return;}
-  let qa=armyQuality([gA,...offs.filter(o=>o!==gA)]),qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)]);if(duel){if(duel.win==='att'){qa+=.06;qd-=.02;}else{qd+=.06;qa-=.02;}}
+  let duelMod=null,duelTxt=null;
+  if(duel&&duel.decisive){const W=duel.win,wg=W==='att'?gA:gD,lg=W==='att'?gD:gA;
+    const lose=W==='att'?Math.round(tc.troops*.12):Math.round(a.troops*.12);if(W==='att')tc.troops-=lose;else a.troops-=lose;
+    let cap=false;if(duel.ko){cap=true;if(W==='att')await captureDefender(lg,a);else await captureGeneral(lg,defF,a.to,a);}
+    duelTxt=`${wg.name}陣前${cap?'生擒':'擊退'}${lg.name}，${W==='att'?'守軍':'攻方'}軍心動搖，逃散 ${fmt(lose)} 人！`;logMsg(`${a.to}陣前單挑：${wg.name}${cap?'生擒':'擊退'}${lg.name}`);
+    duelMod=W==='att'?[.15,-.08]:[-.08,.15];offs=a.offs.map(OF);defOffs=defF?offsIn(a.to,defF):[];gA=bestGen(offs);gD=bestGen(defOffs);
+    if(!offs.length&&W==='def'){splitSup();retreat(a);if(pi)await dlg('主將被擒',`<p>${esc(duelTxt)}全軍無人統領，只得撤退。</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);return;}
+    if(pi&&G.set.watch&&duel.shown)watch=await dlg('單挑結果',`<p>${esc(duelTxt)}</p><p>${a.f===G.player?'大軍隨即攻城！':'敵軍仍然揮兵攻城！'}攻方 ${fmt(a.troops)}，守軍 ${fmt(tc.troops)}。</p>`,[{label:'直接結算',value:false},{label:'觀看 3D 戰鬥',value:true,cls:'primary'}]);}
+  let qa=armyQuality([gA,...offs.filter(o=>o!==gA)]),qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)]);if(duelMod){qa+=duelMod[0];qd+=duelMod[1];}else if(duel){if(duel.win==='att'){qa+=.06;qd-=.02;}else{qd+=.06;qa-=.02;}}
   if(a.horse)qa*=1.05;let res,fire=null;
   if(naval){qa=armyQuality([gA,...offs.filter(o=>o!==gA)])*navalSkill(a.f)*(a.port?1.1:1);qd=armyQuality([gD,...defOffs.filter(o=>o!==gD)])*navalSkill(defF)*(specOf(a.to)==='港'?1.1:1);
     qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*.25);const wg=res.winner==='att'?gA:gD;if(wg&&wg.int>=82&&R()<.6){fire=res.winner;if(fire==='att')res.defLoss=Math.min(tc.troops,Math.round(res.defLoss*1.15));else res.attLoss=Math.min(a.troops,Math.round(res.attLoss*1.15));}}
   else{const sg=Math.min(4,a.siege||0);qa+=.04*sg;qa*=trainMul(a.train);qd*=trainMul(tc.train);res=resolveBattle(a.troops,qa,tc.troops,qd,tc.def*(1-.2*sg));}
-  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=(duel?`${dW.name}耀武揚威，${dL.name}避戰不出`:null)||allyTxt;
+  const dW=duel?(duel.win==='att'?gA:gD):null,dL=duel?(duel.win==='att'?gD:gA):null;const duelBanner=duelTxt||(duel?`${dW.name}耀武揚威，${dL.name}避戰不出`:null)||allyTxt;
   const info={att:{f:a.f,gen:gA,troops:a.troops,siege:naval?0:(a.siege||0)},def:{f:defF,gen:gD,troops:tc.troops,city:a.to},res,duel:null,duelBanner,fire,naval,playerSide:a.f===G.player?'att':defF===G.player?'def':null};
   if(pi&&watch){try{await (naval?navalScene(info):battleScene(info));}catch(e){console.error(e);endSafe();}}
   if(naval&&fire)logMsg(`${a.to}水戰：${(fire==='att'?gA:gD).name}施展火攻`);
@@ -2150,6 +2151,11 @@ async function resolveArrival(a){const tc=G.c[a.to],offs=a.offs.map(OF);
   if(res.winner==='att'){tc.def=Math.round(tc.def*.7);await captureCity(a,defF,defOffs,offs,info);}
   else{tc.def=Math.max(100,Math.round(tc.def*.93));retreat(a);if(pi)await dlg(a.f===G.player?'攻城失利':'守城成功',`<p>${a.f===G.player?`我軍攻打${a.to}失利，損兵 ${fmt(res.attLoss)}，殘部撤回。`:`${a.to}守軍擊退${FACTIONS[a.f].ruler}軍！敵軍折損 ${fmt(res.attLoss)}，我軍損失 ${fmt(res.defLoss)}。`}</p>`,[{label:'返回地圖',value:0,cls:'primary'}]);else logMsg(`${FACTIONS[a.f].ruler}軍攻打${a.to}失利`);}}
 const duelP=(A,B)=>clamp(.5+(A.war-B.war)/36,.1,.9);
+async function captureDefender(o,a){const oldF=o.f,byF=a.f;const ruler=!!(oldF&&FACTIONS[oldF]&&o.name===FACTIONS[oldF].ruler);
+  if(byF===G.player){const p=(ruler?.03:(o.loy<80?.5:.28))*Math.max(.4,1-G.turn/72);const ok=R()<p;if(G.set.anim){try{await surrenderScene(o,ok,'captive');}catch(e){console.error(e);endSafe();}}
+    if(ok){o.f=G.player;o.loy=66;o.c=null;o.army=a.id;a.offs.push(o.id);toast(`${o.name}歸降我軍，隨軍出戰`);}else{releaseOfficer(o,oldF,a.to);if(o.c===a.to)freeOfficer(o);toast(`${o.name}寧死不降，被逐出戰場`);}}
+  else if(byF&&!ruler&&R()<.3){o.f=byF;o.loy=60;o.c=null;o.army=a.id;a.offs.push(o.id);}
+  else{releaseOfficer(o,oldF,a.to);if(o.c===a.to)freeOfficer(o);if(oldF===G.player)toast(`${o.name}被俘後獲釋，返回${o.c||'民間'}`);}}
 async function captureGeneral(o,byF,city,a){a.offs=a.offs.filter(id=>id!==o.id);o.army=null;const oldF=o.f;const ruler=!!(oldF&&FACTIONS[oldF]&&o.name===FACTIONS[oldF].ruler);
   if(byF===G.player){const p=(ruler?.03:(o.loy<80?.5:.28))*Math.max(.4,1-G.turn/72);const ok=R()<p;if(G.set.anim){try{await surrenderScene(o,ok,'captive');}catch(e){console.error(e);endSafe();}}
     if(ok){o.f=G.player;o.loy=66;o.c=city;o.done=true;toast(`${o.name}歸降我軍`);}else{releaseOfficer(o,oldF,city);toast(`${o.name}寧死不降，只得放回`);}}
